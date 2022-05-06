@@ -15,4 +15,4 @@ Cli Ruby script to generate pdf files with selectable text from Mokuro's html ov
 - Copy both the html file and the source images to the same folder as the script
 - On your terminal run `ruby Mokuro2Pdf.rb "<html filename>" "<pdf output filename>" <gamma value(optional)>`
 
-#### A 20 page demo is avaiable, to read it on your kindle simply drag and drop "Mokuro2Pdf-Demo - MKR2PDF.pdf" to your kindle's documents folder
+#### A [20 page demo](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/Mokuro2Pdf-Demo%20-%20MKR2PDF.pdf) is avaiable, to read it on your kindle simply drag and drop "Mokuro2Pdf-Demo - MKR2PDF.pdf" to your kindle's documents folder
