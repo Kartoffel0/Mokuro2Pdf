@@ -8,6 +8,7 @@ Cli Ruby script to generate pdf files with selectable text from Mokuro's html ov
 - Nokogiri `gem install nokogiri`
 - Cgi `gem install cgi`
 - MiniMagick `gem install mini_magick`
+- [Image Magick](https://imagemagick.org/script/download.php)
 
 # Usage
 - Use [Mokuro](https://github.com/kha-white/mokuro) to generate a html overlay for the manga volume you want to convert
