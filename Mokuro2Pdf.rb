@@ -101,7 +101,7 @@ for page in 0...mokuroPages.length do
 
             if textBox.length == 1
                 boxFSize = 0
-                while (boxFSize + 0.1) <= boxHeight && (boxFSize + 0.1) <= boxWidth
+                while ((boxFSize + 0.1) * longest) <= boxHeight && ((boxFSize + 0.1) * longest) <= boxWidth
                     boxFSize += 0.1
                 end
             end
