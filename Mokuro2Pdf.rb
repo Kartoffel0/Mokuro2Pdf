@@ -99,6 +99,13 @@ for page in 0...mokuroPages.length do
                 end
             end
 
+            if textBox.length == 1
+                boxFSize = 0
+                while (boxFSize + 0.1) <= boxHeight && (boxFSize + 0.1) <= boxWidth
+                    boxFSize += 0.1
+                end
+            end
+
             lineSpace = 1.1
 
             if isBoxVert
