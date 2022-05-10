@@ -13,8 +13,7 @@ Also
 - [Image Magick](https://imagemagick.org/script/download.php) as it is required by MiniMagick
 
 # Usage
-- Use [Mokuro](https://github.com/kha-white/mokuro) to generate a html overlay for the manga volume you want to convert
-- This script at the moment doesn't support whole series html overlays, please make a html overlay for each volume
+- Use [Mokuro](https://github.com/kha-white/mokuro) to generate a html overlay
 - Copy both the [`_ocr` and source images folders](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/folders.JPG) to the same folder as the script
 - On your terminal run `ruby Mokuro2Pdf.rb -i "[1]" -n "[2]" -g [3]`
   - **[1] - Folder with all the manga insides**
