@@ -25,5 +25,3 @@ Also
 - Copy both the `<name you gave to the pdf> - MKR2PDF.json` json file and the folder with all the manga pages to [Memo2Anki](https://github.com/Kartoffel0/Memo2Anki)'s directory if you plan to mine from the pdfs
 
 #### A [20 page demo](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/Mokuro2Pdf-Demo%20-%20MKR2PDF.pdf) is avaiable, to read it on your kindle simply drag and drop "Mokuro2Pdf-Demo - MKR2PDF.pdf" to your kindle's documents folder
-
-#### Try renaming both the [source images folder](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/folders.JPG) and [the one inside `_ocr`](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/ocrFolder.JPG) If you get [an error](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/foldernameError.JPG), make sure you give both of them the exact same name
