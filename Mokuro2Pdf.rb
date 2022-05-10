@@ -113,7 +113,13 @@ for i in 0...pages.length do
                 for l in 0...pageText[b]["lines"].length do
                     lineTmp = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                     if /[!！?？]+$/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[!！?？]+$/, "") + "！"
+                        lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
+                    end
+                    if /[０-９0-9][０-９0-9][０-９0-9]/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9][０-９0-9]/, "!")
+                    end
+                    if /[０-９0-9][０-９0-9]/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\])」』》]/)
                     lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.25 : 0)
@@ -179,8 +185,12 @@ for i in 0...pages.length do
                                 numberComp += line[char]
                                 if !/[０-９0-9]/.match?(line[char + 1])
                                     if numberComp.length == 2
-                                        tmpFSize = boxFSize * 0.4
+                                        tmpFSize = boxFSize * 0.5
                                         pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
+                                        boxUp -= boxFSize
+                                    elsif numberComp.length == 3
+                                        tmpFSize = boxFSize * 0.35
+                                        pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
                                         boxUp -= boxFSize
                                     else
                                         for n in 0...numberComp.length
@@ -216,7 +226,13 @@ for i in 0...pages.length do
                 for l in textBox do
                     lineTmp = l.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                     if /[!！?？]+$/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[!！?？]+$/, "") + "！"
+                        lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
+                    end
+                    if /[０-９0-9][０-９0-9][０-９0-9]/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9][０-９0-9]/, "!")
+                    end
+                    if /[０-９0-9][０-９0-9]/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\])」』》]/)
                     lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.25 : 0)
@@ -284,8 +300,12 @@ for i in 0...pages.length do
                             numberComp += line[char]
                             if !/[０-９0-9]/.match?(line[char + 1])
                                 if numberComp.length == 2
-                                    tmpFSize = boxFSize * 0.4
+                                    tmpFSize = boxFSize * 0.5
                                     pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
+                                    boxUp -= boxFSize
+                                elsif numberComp.length == 3
+                                    tmpFSize = boxFSize * 0.35
+                                    pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
                                     boxUp -= boxFSize
                                 else
                                     for n in 0...numberComp.length
