@@ -159,7 +159,7 @@ for i in 0...pages.length do
                         boxUp = (pageHeight - textLevels[level]) - boxFSize
                         numberComp = ''
                         for char in 0...line.length do
-                            if /[ー…～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
+                            if /[ー…‥～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                 if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                     if /[《『「\(\[\{（〔［｛〈【＜≪]/.match?(line[char])
                                         pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize + (boxFSize * 0.2)]
@@ -264,7 +264,7 @@ for i in 0...pages.length do
                     line = lineBef.gsub(/(．．．)/, "…")
                     numberComp = ''
                     for char in 0...line.length do
-                        if /[ー…～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
+                        if /[ー…‥～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                             if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                 if /[《『「\(\[\{（〔［｛〈【＜≪]/.match?(line[char])
                                     pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize + (boxFSize * 0.2)]
