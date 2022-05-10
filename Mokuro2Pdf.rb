@@ -38,8 +38,8 @@ else
     puts "Using the defined '#{options[:ocrFolder]}/' ocr folder path"
 end
 
-pages = Dir.glob("#{options[:imageFolder]}/*").sort
-ocrs = Dir.glob("#{options[:ocrFolder]}/*.json").sort
+pages = Dir.glob("*", base: options[:imageFolder]).sort
+ocrs = Dir.glob("*.json", base: options[:ocrFolder]).sort
 puts "#{pages.length} Pages found"
 puts "#{ocrs.length} Jsons found"
 
@@ -52,10 +52,10 @@ info = {
 
 for i in 0...pages.length do
     puts i + 1
-    page = JSON.parse(File.read("#{ocrs[i]}"))
+    page = JSON.parse(File.read("#{options[:ocrFolder]}/#{ocrs[i]}"))
     pageWidth = page["img_width"]
     pageHeight = page["img_height"]
-    pageImg = pages[i]
+    pageImg = "#{options[:imageFolder]}/#{pages[i]}"
     pagesJson[i+1] = pageImg
     pageBgMagick = MiniMagick::Image.open(pageImg)
     pageBgMagick.gamma options[:gamma]
