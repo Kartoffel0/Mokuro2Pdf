@@ -23,6 +23,10 @@ end.parse!
 
 FileUtils.mkdir_p "tmp"
 
+if !options.key?(:filename) || options[:filename] == ''
+    options[:filename] = options[:imageFolder]
+end
+
 puts "Mokuro2Pdf"
 puts "Converting '#{options[:imageFolder]}/' to '#{options[:filename]} - MKR2PDF.pdf'"
 if options.key?(:gamma)
