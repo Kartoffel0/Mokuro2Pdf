@@ -87,7 +87,7 @@ for i in 0...pages.length do
             fontSize = 0
             if !isBoxVert
                 for l in 0...pageText[b]["lines"].length do
-                    line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[”"“゛″〝〟＂]/, "")
+                    line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                     lineLeft = pageText[b]["lines_coords"][l][3][0]
                     lineRight = pageText[b]["lines_coords"][l][2][0]
                     lineBottom = pageText[b]["lines_coords"][l][3][1]
@@ -145,7 +145,7 @@ for i in 0...pages.length do
                         lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 10) || pageText[b]["lines_coords"][l][1][1] >= (level - 10))
                         lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 10) || pageText[b]["lines_coords"][l][1][1] <= (level + 10))
                         if lineLevelThreshLow && lineLevelThreshHigh
-                            levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, "").gsub(/[”"“゛″〝〟＂]/, ""), fontSize]
+                            levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, ""), fontSize]
                         end
                     end
                 end
@@ -244,7 +244,7 @@ for i in 0...pages.length do
                     if /[０-９0-9][０-９0-9]/.match?(lineTmp)
                         lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
-                    scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\])」』》]/)
+                    scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
                     lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0 : 0)
                     if lineLength > longest
                         longest = lineLength
@@ -287,7 +287,7 @@ for i in 0...pages.length do
                 horBoxUp = (pageHeight - boxTop) - boxFSize
                 for lineBef in textBox.reverse do
                     boxUp = (pageHeight - boxTop) - boxFSize
-                    line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[”"“゛″〝〟＂]/, "")
+                    line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                     numberComp = ''
                     ponctComp = ''
                     for char in 0...line.length do
