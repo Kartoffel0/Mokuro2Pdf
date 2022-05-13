@@ -42,8 +42,10 @@ else
     puts "Using the defined '#{options[:ocrFolder]}/' ocr folder path"
 end
 
-pages = Dir.glob("*", base: options[:imageFolder]).sort
+pages = Dir.glob(["*.jpg", "*.jpeg", "*.jpe", "*.jif", "*.jfif", "*.jfi", "*.png", "*.gif", "*.webp", "*.tiff", "*.tif", "*.psd", "*.raw", "*.arw", "*.cr2", "*.nrw", "*.k25", "*.bmp", "*.dib", "*.jp2", "*.j2k", "*.jpf", "*.jpx", "*.jpm", "*.mj2"], base: options[:imageFolder]).sort
 ocrs = Dir.glob("*.json", base: options[:ocrFolder]).sort
+pages = pages.select {|item| File.file?("#{options[:imageFolder]}/#{item}")}
+ocrs = ocrs.select {|item| File.file?("#{options[:ocrFolder]}/#{item}")}
 puts "#{pages.length} Pages found"
 puts "#{ocrs.length} Jsons found"
 
