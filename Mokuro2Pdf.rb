@@ -103,7 +103,7 @@ for i in 0...pages.length do
                 end
             elsif !(yAxisMatch && sidesMatch) && isBoxVert
                 textLevels = pageText[b]["lines_coords"].map{|line| line[0][1]}.sort.uniq
-                textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - 10) && y <= (textLevels[idx + 1] + 10)) do textLevels.delete_at(idx + 1) end} 
+                textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - 15) && y <= (textLevels[idx + 1] + 15)) do textLevels.delete_at(idx + 1) end} 
                 levelLeft = []
                 levelRight = []
                 levelLine = {}
@@ -146,8 +146,8 @@ for i in 0...pages.length do
                     end
                     for level in textLevels do
                         levelLine[level] = [] if !(levelLine.key?(level))
-                        lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 10) || pageText[b]["lines_coords"][l][1][1] >= (level - 10))
-                        lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 10) || pageText[b]["lines_coords"][l][1][1] <= (level + 10))
+                        lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 15) || pageText[b]["lines_coords"][l][1][1] >= (level - 15))
+                        lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 15) || pageText[b]["lines_coords"][l][1][1] <= (level + 15))
                         if lineLevelThreshLow && lineLevelThreshHigh
                             levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, ""), fontSize, ocrFSize]
                         end
