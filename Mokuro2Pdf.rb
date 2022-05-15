@@ -124,12 +124,14 @@ for i in 0...pages.length do
                         lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0 : 0)
+                    lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
+                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0)
                     heigthLeft = (pageText[b]["lines_coords"][l][3][1] - pageText[b]["lines_coords"][l][0][1])
                     heigthRight = (pageText[b]["lines_coords"][l][2][1] - pageText[b]["lines_coords"][l][1][1])
                     boxHeight = (pageText[b]["box"][3] - pageText[b]["box"][1])
                     widthTop = (pageText[b]["lines_coords"][l][1][0] - pageText[b]["lines_coords"][l][0][0])
                     widthBottom = (pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0])
+                    ocrFSize = pageText[b]["font_size"]
                     lineHeight = heigthLeft <= heigthRight ? heigthLeft : heigthRight
                     lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
                     lineWidth = (widthTop <= widthBottom) ? widthTop : widthBottom
@@ -147,7 +149,7 @@ for i in 0...pages.length do
                         lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 10) || pageText[b]["lines_coords"][l][1][1] >= (level - 10))
                         lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 10) || pageText[b]["lines_coords"][l][1][1] <= (level + 10))
                         if lineLevelThreshLow && lineLevelThreshHigh
-                            levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, ""), fontSize]
+                            levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, ""), fontSize, ocrFSize]
                         end
                     end
                 end
@@ -155,7 +157,7 @@ for i in 0...pages.length do
                     boxWidth = levelWidth[level][1] - levelWidth[level][2]
                     boxLength = levelLine[textLevels[level]].length
                     boxLeft = levelWidth[level][2]
-                    boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| line[1] < smallest ? line[1] : smallest}
+                    boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| (line[1] < smallest) && (line[1] > (line[2] * 0.3)) ? line[1] : smallest}
                     lineSpace = 1.1
                     if boxLength > 1 && (((boxFSize * 1.1) * boxLength) - (boxFSize * 0.1)) < (boxWidth)
                         while (((boxFSize * lineSpace) * boxLength) - (boxFSize * (lineSpace - 1))) < (boxWidth)
@@ -163,6 +165,7 @@ for i in 0...pages.length do
                         end
                     end
                     for line in levelLine[textLevels[level]].reverse do
+                        next if line[1] <= (line[2] * 0.3)
                         line = line[0]
                         boxUp = (pageHeight - textLevels[level]) - boxFSize
                         numberComp = ''
@@ -213,6 +216,7 @@ for i in 0...pages.length do
                 boxHeight = pageText[b]["box"][3] - pageText[b]["box"][1]
                 isBoxVert = pageText[b]["vertical"]
                 textBox = pageText[b]["lines"]
+                ocrFSize = pageText[b]["font_size"]
                 boxFSize = 0
                 longest = 1
                 lineSpace = 1.1
@@ -228,7 +232,8 @@ for i in 0...pages.length do
                         lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0 : 0)
+                    lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
+                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0)
                     if lineLength > longest
                         longest = lineLength
                     end
@@ -269,6 +274,7 @@ for i in 0...pages.length do
                 end
                 horBoxUp = (pageHeight - boxTop) - boxFSize
                 for lineBef in textBox.reverse do
+                    next if boxFSize <= (ocrFSize * 0.3)
                     boxUp = (pageHeight - boxTop) - boxFSize
                     line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                     numberComp = ''
