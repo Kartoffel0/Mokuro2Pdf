@@ -168,22 +168,8 @@ for i in 0...pages.length do
                         numberComp = ''
                         ponctComp = ''
                         for char in 0...line.length do
-                            if /[ー―…‥～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                    if /[《『「\(\[\{（〔［｛〈【＜≪]/.match?(line[char])
-                                        pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize + (boxFSize * 0.2)]
-                                        boxUp -= boxFSize * 0.8
-                                    elsif /[≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                        pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize - (boxFSize * 0.2)]
-                                        boxUp -= boxFSize * 0.8
-                                    else
-                                        pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize]
-                                        boxUp -= boxFSize * 0.8
-                                    end
-                                else
-                                    pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize]
-                                    boxUp -= boxFSize
-                                end
+                            if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
+                                boxUp -= boxFSize * 0.8
                             elsif /[０-９0-9]/.match?(line[char])
                                 numberComp += line[char]
                                 if !/[０-９0-9]/.match?(line[char + 1])
@@ -213,13 +199,8 @@ for i in 0...pages.length do
                                     ponctComp = ''
                                 end
                             else
-                                if /[ぁァぇェぃィぉォぅゥゃャょョっッ]/.match?(line[char])
-                                    pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                    boxUp -= boxFSize
-                                else
-                                    pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                    boxUp -= boxFSize
-                                end
+                                pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
+                                boxUp -= boxFSize
                             end
                         end
                         boxLeft += boxFSize * lineSpace
@@ -293,22 +274,8 @@ for i in 0...pages.length do
                     numberComp = ''
                     ponctComp = ''
                     for char in 0...line.length do
-                        if /[ー―…‥～~《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                            if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                if /[《『「\(\[\{（〔［｛〈【＜≪]/.match?(line[char])
-                                    pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize + (boxFSize * 0.2)]
-                                    boxUp -= boxFSize * 0.8
-                                elsif /[≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                    pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize - (boxFSize * 0.2)]
-                                    boxUp -= boxFSize * 0.8
-                                else
-                                    pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize]
-                                    boxUp -= boxFSize * 0.8
-                                end
-                            else
-                                pdf.draw_text line[char], size: boxFSize, rotate: -90, at: [boxLeft, boxUp + boxFSize]
-                                boxUp -= boxFSize
-                            end
+                        if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
+                            boxUp -= boxFSize * 0.8
                         elsif /[０-９0-9]/.match?(line[char])
                             numberComp += line[char]
                             if !/[０-９0-9]/.match?(line[char + 1])
@@ -338,13 +305,8 @@ for i in 0...pages.length do
                                 ponctComp = ''
                             end
                         else
-                            if /[ぁァぇェぃィぉォぅゥゃャょョっッ]/.match?(line[char])
-                                pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                boxUp -= boxFSize
-                            else
-                                pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                boxUp -= boxFSize
-                            end
+                            pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
+                            boxUp -= boxFSize
                         end
                     end
                     boxLeft += boxFSize * lineSpace
