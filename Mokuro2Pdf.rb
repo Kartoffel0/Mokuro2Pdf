@@ -117,16 +117,16 @@ for i in 0...pages.length do
                     if /[!！?？]+$/.match?(lineTmp)
                         lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
                     end
-                    if /[０-９0-9][０-９0-9][０-９0-9]/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9][０-９0-9]/, "!")
+                    if /[０-９0-9]{2,3}/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9]{2,3}/, "!")
                     end
-                    if /[０-９0-9][０-９0-9]/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
+                    if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                    scanPt = lineTmp.scan(/[。\.．]+$/)
+                    scanPt = lineTmp.scan(/[。\.．、，,]+$/)
                     lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                    lineTmp = lineTmp.gsub(/[。\.．]+$/, "")
+                    lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
                     lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
                     heigthLeft = (pageText[b]["lines_coords"][l][3][1] - pageText[b]["lines_coords"][l][0][1])
                     heigthRight = (pageText[b]["lines_coords"][l][2][1] - pageText[b]["lines_coords"][l][1][1])
@@ -151,7 +151,7 @@ for i in 0...pages.length do
                         lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 15) || pageText[b]["lines_coords"][l][1][1] >= (level - 15))
                         lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 15) || pageText[b]["lines_coords"][l][1][1] <= (level + 15))
                         if lineLevelThreshLow && lineLevelThreshHigh
-                            levelLine[level] << [pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/．/, "").gsub(/\s/, ""), fontSize, ocrFSize]
+                            levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
                         end
                     end
                 end
@@ -168,16 +168,17 @@ for i in 0...pages.length do
                     end
                     for line in levelLine[textLevels[level]].reverse do
                         next if line[1] <= (line[2] * 0.3)
-                        line = line[0]
+                        line = line[0].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
                         boxUp = (pageHeight - textLevels[level]) - boxFSize
                         numberComp = ''
                         ponctComp = ''
+                        romComp = ''
                         for char in 0...line.length do
                             if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                 boxUp -= boxFSize * 0.8
                             elsif /[０-９0-9]/.match?(line[char])
                                 numberComp += line[char]
-                                if !/[０-９0-9]/.match?(line[char + 1])
+                                if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
                                     if numberComp.length == 2
                                         tmpFSize = boxFSize * 0.5
                                         pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
@@ -197,11 +198,25 @@ for i in 0...pages.length do
                             elsif /[!！?？]/.match?(line[char])
                                 ponctComp += line[char]
                                 if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
-                                    if ponctComp.length > 0
-                                        tmpFSize = boxFSize / ponctComp.length
-                                        pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                    end
+                                    tmpFSize = boxFSize / ponctComp.length
+                                    pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                    boxUp -= boxFSize
                                     ponctComp = ''
+                                end
+                            elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
+                                romComp += line[char]
+                                if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
+                                    if romComp.length <= 3
+                                        tmpFSize = boxFSize / romComp.length
+                                        pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                        boxUp -= boxFSize
+                                    else
+                                        for l in 0...romComp.length
+                                            pdf.draw_text romComp[l], size: boxFSize, at: [boxLeft, boxUp]
+                                            boxUp -= boxFSize
+                                        end
+                                    end
+                                    romComp = ''
                                 end
                             else
                                 pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
@@ -227,16 +242,16 @@ for i in 0...pages.length do
                     if /[!！?？]+$/.match?(lineTmp)
                         lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
                     end
-                    if /[０-９0-9][０-９0-9][０-９0-9]/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9][０-９0-9]/, "!")
+                    if /[０-９0-9]{2,3}/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[０-９0-9]{2,3}/, "!")
                     end
-                    if /[０-９0-9][０-９0-9]/.match?(lineTmp)
-                        lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
+                    if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
+                        lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                    scanPt = lineTmp.scan(/[。\.．]+$/)
+                    scanPt = lineTmp.scan(/[。\.．、，,]+$/)
                     lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                    lineTmp = lineTmp.gsub(/[。\.．]+$/, "")
+                    lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
                     lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
                     if lineLength > longest
                         longest = lineLength
@@ -280,15 +295,16 @@ for i in 0...pages.length do
                 for lineBef in textBox.reverse do
                     next if boxFSize <= (ocrFSize * 0.3)
                     boxUp = (pageHeight - boxTop) - boxFSize
-                    line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
+                    line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
                     numberComp = ''
                     ponctComp = ''
+                    romComp = ''
                     for char in 0...line.length do
                         if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                             boxUp -= boxFSize * 0.8
                         elsif /[０-９0-9]/.match?(line[char])
                             numberComp += line[char]
-                            if !/[０-９0-9]/.match?(line[char + 1])
+                            if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
                                 if numberComp.length == 2
                                     tmpFSize = boxFSize * 0.5
                                     pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
@@ -308,11 +324,25 @@ for i in 0...pages.length do
                         elsif /[!！?？]/.match?(line[char])
                             ponctComp += line[char]
                             if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
-                                if ponctComp.length > 0
-                                    tmpFSize = boxFSize / ponctComp.length
-                                    pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                end
+                                tmpFSize = boxFSize / ponctComp.length
+                                pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                boxUp -= boxFSize
                                 ponctComp = ''
+                            end
+                        elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
+                            romComp += line[char]
+                            if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
+                                if romComp.length <= 3
+                                    tmpFSize = boxFSize / romComp.length
+                                    pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                    boxUp -= boxFSize
+                                else
+                                    for l in 0...romComp.length
+                                        pdf.draw_text romComp[l], size: boxFSize, at: [boxLeft, boxUp]
+                                        boxUp -= boxFSize
+                                    end
+                                end
+                                romComp = ''
                             end
                         else
                             pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
