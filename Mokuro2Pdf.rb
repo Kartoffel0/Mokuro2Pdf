@@ -124,8 +124,10 @@ for i in 0...pages.length do
                         lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
+                    scanPt = lineTmp.scan(/[。\.．]+$/)
                     lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0)
+                    lineTmp = lineTmp.gsub(/[。\.．]+$/, "")
+                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
                     heigthLeft = (pageText[b]["lines_coords"][l][3][1] - pageText[b]["lines_coords"][l][0][1])
                     heigthRight = (pageText[b]["lines_coords"][l][2][1] - pageText[b]["lines_coords"][l][1][1])
                     boxHeight = (pageText[b]["box"][3] - pageText[b]["box"][1])
@@ -232,8 +234,10 @@ for i in 0...pages.length do
                         lineTmp = lineTmp.gsub(/[０-９0-9][０-９0-9]/, "!")
                     end
                     scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
+                    scanPt = lineTmp.scan(/[。\.．]+$/)
                     lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0)
+                    lineTmp = lineTmp.gsub(/[。\.．]+$/, "")
+                    lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
                     if lineLength > longest
                         longest = lineLength
                     end
