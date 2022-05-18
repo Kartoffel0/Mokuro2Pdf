@@ -1,7 +1,7 @@
 # Mokuro2Pdf
 Cli Ruby script to generate pdf files with selectable text from Mokuro's html overlay
 
-<img src="Mokuro2Pdf on Kindle.png" width=auto heigth=auto>
+<img src="img/Mokuro2Pdf on Kindle.png" width=auto heigth=auto>
 
 #### You can use [Memo2Anki](https://github.com/Kartoffel0/Memo2Anki) to mine from the pdfs created with this script
 
