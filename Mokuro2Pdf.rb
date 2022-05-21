@@ -62,6 +62,7 @@ if !options.key?(:parentImg)
     folder.append(info)
     folder.append(options[:imageFolder])
     folder.append(options[:ocrFolder])
+    folder.append(options[:imageFolder])
     folders.append(folder)
 else
     volumesImg = Dir.glob("*", base: options[:parentImg]).sort
@@ -83,6 +84,7 @@ else
         folder.append(info)
         folder.append("#{options[:parentImg]}/#{volume}")
         folder.append("#{options[:parentOcr]}/#{volume}")
+        folder.append(volume)
         folders.append(folder)
     end
 end
@@ -92,6 +94,7 @@ for folder in folders do
     info = folder[2]
     imgFolder = folder[3]
     ocrFolder = folder[4]
+    jsonFolderPath = folder[5]
     pagesJson = {}
     FileUtils.mkdir_p "tmp"
     puts "\nProcessing #{info[:Title]}..."
@@ -100,7 +103,7 @@ for folder in folders do
         pageWidth = page["img_width"]
         pageHeight = page["img_height"]
         pageImg = "#{imgFolder}/#{pages[i]}"
-        pagesJson[i+1] = pageImg
+        pagesJson[i+1] = "#{jsonFolderPath}/#{pages[i]}"
         pageBgMagick = MiniMagick::Image.open(pageImg)
         pageBgMagick.gamma options[:gamma]
         pageBgMagick.write "tmp/page-#{i}"
