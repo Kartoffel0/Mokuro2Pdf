@@ -14,7 +14,7 @@ OptionParser.new do |opt|
         options[:filename] = n
     end
     opt.on("-g GAMMA", "--gamma GAMMA", "Gamma value to be used on all images, default = 0.8") do |g|
-        options[:gamma] = g
+        options[:gamma] = g.to_f
     end
     opt.on("-o OCRFOLDER", "--ocr OCRFOLDER", "Folder containing all manga pages's ocr data, default = _ocr/#{options[:imageFolder]}") do |o|
         options[:ocrFolder] = o
@@ -25,14 +25,23 @@ OptionParser.new do |opt|
     opt.on("-q PARENTocrFOLDER", "--parent_ocr_folder PARENTocrFOLDER", "Folder containing all volumes's ocr data folders") do |q|
         options[:parentOcr] = q
     end
+    opt.on("-f FONT_TRANSPARENCY", "--font_transparency FONT_TRANSPARENCY", "Transparency to be used by the generated selectable text, default = 0.2") do |f|
+        options[:fontTransparency] = f.to_f
+    end
 end.parse!
 puts ""
 puts "Mokuro2Pdf"
 if options.key?(:gamma)
-    puts "Using #{options[:gamma]} as the gamma value"
+    puts "Using the defined #{options[:gamma]} gamma value"
 else
     puts "Using the default(0.8) gamma value"
     options[:gamma] = 0.8
+end
+if options.key?(:fontTransparency)
+    puts "Using the defined #{options[:fontTransparency]} font transparency"
+else
+    puts "Using the default(0.2) font transparency"
+    options[:fontTransparency] = 0.2
 end
 folders = []
 if !options.key?(:parentImg)
@@ -115,7 +124,7 @@ for folder in folders do
         end
         pdf.image pageBgMagickPath, height: pageHeight, width: pageWidth, at: [0, pageHeight]
         pageText = page["blocks"]
-        pdf.transparent(0.2) do
+        pdf.transparent(options[:fontTransparency]) do
             pdf.font("ipaexg.ttf")
             for b in 0...pageText.length do
                 isBoxVert = pageText[b]["vertical"]
