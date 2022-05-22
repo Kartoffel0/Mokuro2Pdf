@@ -25,7 +25,7 @@ OptionParser.new do |opt|
     opt.on("-q PARENTocrFOLDER", "--parent_ocr_folder PARENTocrFOLDER", "Folder containing all volumes's ocr data folders") do |q|
         options[:parentOcr] = q
     end
-    opt.on("-f FONT_TRANSPARENCY", "--font_transparency FONT_TRANSPARENCY", "Transparency to be used by the generated selectable text, default = 0.2") do |f|
+    opt.on("-f FONT_TRANSPARENCY", "--font_transparency FONT_TRANSPARENCY", "Selectable text's transparency, default = 0.2") do |f|
         options[:fontTransparency] = f.to_f
     end
 end.parse!
