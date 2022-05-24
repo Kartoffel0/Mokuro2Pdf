@@ -105,7 +105,6 @@ for folder in folders do
     ocrFolder = folder[4]
     jsonFolderPath = folder[5]
     pagesJson = {}
-    FileUtils.mkdir_p "tmp"
     puts "\nProcessing #{info[:Title]}..."
     for i in 0...pages.length do
         page = JSON.parse(File.read("#{ocrFolder}/#{ocrs[i]}"))
@@ -113,10 +112,15 @@ for folder in folders do
         pageHeight = page["img_height"]
         pageImg = "#{imgFolder}/#{pages[i]}"
         pagesJson[i+1] = "#{jsonFolderPath}/#{pages[i]}"
-        pageBgMagick = MiniMagick::Image.open(pageImg)
-        pageBgMagick.gamma options[:gamma]
-        pageBgMagick.write "tmp/page-#{i}"
-        pageBgMagickPath = "tmp/page-#{i}"
+        if options[:gamma] == 1
+            pageBgMagickPath = pageImg
+        else
+            FileUtils.mkdir_p "tmp"
+            pageBgMagick = MiniMagick::Image.open(pageImg)
+            pageBgMagick.gamma options[:gamma]
+            pageBgMagick.write "tmp/page-#{i}"
+            pageBgMagickPath = "tmp/page-#{i}"
+        end
         if i == 0
             pdf = Prawn::Document.new(page_size: [pageWidth, pageHeight], margin: [0, 0, 0, 0], info: info)
         else
@@ -127,6 +131,8 @@ for folder in folders do
         pdf.transparent(options[:fontTransparency]) do
             pdf.font("ipaexg.ttf")
             for b in 0...pageText.length do
+                heightTreshold = pageHeight * 0.01
+                widthThreshold =pageWidth * 0.01
                 isBoxVert = pageText[b]["vertical"]
                 yAxisMed = pageText[b]["lines_coords"].reduce(0) {|total, line| total + (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}/pageText[b]["lines"].length
                 yAxisBox = pageText[b]["box"][1]
@@ -134,32 +140,34 @@ for folder in folders do
                 leftBox = pageText[b]["box"][0]
                 linesLeft = pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest}
                 linesRight = pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) : righttest}
-                yAxisMatch = (yAxisMed >= (yAxisBox - 10) && yAxisMed <= (yAxisBox + 10))
-                sidesMatch = ((linesLeft >= (leftBox - 10) && linesLeft <= (leftBox + 10)) && (linesRight >= (rightBox - 10) && linesRight <= (rightBox + 10)))
+                yAxisMatch = (yAxisMed >= (yAxisBox - heightTreshold) && yAxisMed <= (yAxisBox + heightTreshold))
+                sidesMatch = ((linesLeft >= (leftBox - (widthThreshold * 0.5)) && linesLeft <= (leftBox + (widthThreshold * 0.5))) && (linesRight >= (rightBox - (widthThreshold * 0.5)) && linesRight <= (rightBox + (widthThreshold * 0.5))))
                 fontSize = 0
                 if !isBoxVert
                     for l in 0...pageText[b]["lines"].length do
                         line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                         lineLeft = pageText[b]["lines_coords"][l][3][0]
                         lineRight = pageText[b]["lines_coords"][l][2][0]
-                        lineBottom = pageText[b]["lines_coords"][l][3][1]
+                        lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
                         lineWidth = pageText[b]["lines_coords"][l][2][0] - lineLeft
                         lineHeight = lineBottom - pageText[b]["lines_coords"][l][0][1]
                         fontSize = 0
-                        while ((fontSize + 0.1) * line.length) <= lineWidth && fontSize <= lineHeight
+                        while ((fontSize + 0.1) * line.length) <= lineWidth && fontSize <= (lineHeight * 2)
                             fontSize += 0.1
                         end
+                        next if fontSize <= (pageText[b]["font_size"] * 0.15)
+                        line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                         pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
                     end
                 elsif !(yAxisMatch && sidesMatch) && isBoxVert
                     textLevels = pageText[b]["lines_coords"].map{|line| line[0][1]}.sort.uniq
-                    textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - 15) && y <= (textLevels[idx + 1] + 15)) do textLevels.delete_at(idx + 1) end} 
+                    textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - heightTreshold) && y <= (textLevels[idx + 1] + heightTreshold)) do textLevels.delete_at(idx + 1) end} 
                     levelLeft = []
                     levelRight = []
                     levelLine = {}
                     for level in 0...textLevels.length do
-                        levelLeft << pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - 10) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + 10) ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest : lefttest}
-                        levelRight << pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - 10) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + 10) ? (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) : righttest : righttest}
+                        levelLeft << pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest : lefttest}
+                        levelRight << pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) : righttest : righttest}
                     end
                     levelWidth = textLevels.map.with_index {|level, idx| [level, levelRight[idx], levelLeft[idx]]}
                     for l in 0...pageText[b]["lines"].length do
@@ -187,19 +195,13 @@ for folder in folders do
                         lineHeight = heigthLeft <= heigthRight ? heigthLeft : heigthRight
                         lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
                         lineWidth = (widthTop <= widthBottom) ? widthTop : widthBottom
-                        if isBoxVert
-                            while (((fontSize + 0.1) * lineLength) <= lineHeight) && fontSize <= lineWidth
-                                fontSize += 0.1
-                            end
-                        else
-                            while (((fontSize + 0.1) * lineLength) <= lineWidth) && fontSize <= lineHeight
-                                fontSize += 0.1
-                            end
+                        while (((fontSize + 0.1) * lineLength) <= lineHeight) && fontSize <= (lineWidth * 2)
+                            fontSize += 0.1
                         end
                         for level in textLevels do
                             levelLine[level] = [] if !(levelLine.key?(level))
-                            lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - 15) || pageText[b]["lines_coords"][l][1][1] >= (level - 15))
-                            lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + 15) || pageText[b]["lines_coords"][l][1][1] <= (level + 15))
+                            lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - heightTreshold) || pageText[b]["lines_coords"][l][1][1] >= (level - heightTreshold))
+                            lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + heightTreshold) || pageText[b]["lines_coords"][l][1][1] <= (level + heightTreshold))
                             if lineLevelThreshLow && lineLevelThreshHigh
                                 levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
                             end
@@ -217,8 +219,8 @@ for folder in folders do
                             end
                         end
                         for line in levelLine[textLevels[level]].reverse do
-                            next if line[1] <= (line[2] * 0.3)
-                            line = line[0].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
+                            next if line[1] <= (line[2] * 0.5)
+                            line = line[0].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                             boxUp = (pageHeight - textLevels[level]) - boxFSize
                             numberComp = ''
                             ponctComp = ''
@@ -343,9 +345,9 @@ for folder in folders do
                     end
                     horBoxUp = (pageHeight - boxTop) - boxFSize
                     for lineBef in textBox.reverse do
-                        next if boxFSize <= (ocrFSize * 0.3)
+                        next if boxFSize <= (ocrFSize * 0.5)
                         boxUp = (pageHeight - boxTop) - boxFSize
-                        line = lineBef.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
+                        line = lineBef.strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                         numberComp = ''
                         ponctComp = ''
                         romComp = ''
@@ -406,7 +408,9 @@ for folder in folders do
         end
     end
     File.write("#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
-    FileUtils.remove_dir("tmp")
+    if options[:gamma] != 1
+        FileUtils.remove_dir("tmp")
+    end
     pdf.render_file("#{info[:Title]} - MKR2PDF.pdf")
     puts "Done!"
 end
