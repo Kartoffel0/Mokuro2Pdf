@@ -131,8 +131,8 @@ for folder in folders do
         pdf.transparent(options[:fontTransparency]) do
             pdf.font("ipaexg.ttf")
             for b in 0...pageText.length do
-                heightTreshold = pageHeight * 0.01
-                widthThreshold =pageWidth * 0.01
+                heightTreshold = pageHeight * 0.0075
+                widthThreshold =pageWidth * 0.0075
                 isBoxVert = pageText[b]["vertical"]
                 yAxisMed = pageText[b]["lines_coords"].reduce(0) {|total, line| total + (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}/pageText[b]["lines"].length
                 yAxisBox = pageText[b]["box"][1]
@@ -141,26 +141,24 @@ for folder in folders do
                 linesLeft = pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest}
                 linesRight = pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) : righttest}
                 yAxisMatch = (yAxisMed >= (yAxisBox - heightTreshold) && yAxisMed <= (yAxisBox + heightTreshold))
-                sidesMatch = ((linesLeft >= (leftBox - (widthThreshold * 0.5)) && linesLeft <= (leftBox + (widthThreshold * 0.5))) && (linesRight >= (rightBox - (widthThreshold * 0.5)) && linesRight <= (rightBox + (widthThreshold * 0.5))))
+                sidesMatch = ((linesLeft >= (leftBox - widthThreshold) && linesLeft <= (leftBox + widthThreshold)) && (linesRight >= (rightBox - widthThreshold) && linesRight <= (rightBox + widthThreshold)))
+                hasNumbers = /(?<![０-９0-9])[０-９0-9]{2,}(?![０-９0-9])/.match?(pageText[b]["lines"].join(" "))
                 fontSize = 0
                 if !isBoxVert
                     for l in 0...pageText[b]["lines"].length do
-                        line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
+                        line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
                         lineLeft = pageText[b]["lines_coords"][l][3][0]
                         lineRight = pageText[b]["lines_coords"][l][2][0]
                         lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
                         lineWidth = pageText[b]["lines_coords"][l][2][0] - lineLeft
                         lineHeight = lineBottom - pageText[b]["lines_coords"][l][0][1]
-                        fontSize = 0
-                        while ((fontSize + 0.1) * line.length) <= lineWidth && fontSize <= (lineHeight * 2)
-                            fontSize += 0.1
-                        end
+                        fontSize = (lineWidth / line.length) <= (lineHeight * 1.5) ? (lineWidth / line.length) : lineHeight
                         next if fontSize <= (pageText[b]["font_size"] * 0.15)
                         line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                         pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
                     end
-                elsif !(yAxisMatch && sidesMatch) && isBoxVert
-                    textLevels = pageText[b]["lines_coords"].map{|line| line[0][1]}.sort.uniq
+                elsif !(yAxisMatch && sidesMatch) || hasNumbers
+                    textLevels = pageText[b]["lines_coords"].map{|line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}.sort.uniq
                     textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - heightTreshold) && y <= (textLevels[idx + 1] + heightTreshold)) do textLevels.delete_at(idx + 1) end} 
                     levelLeft = []
                     levelRight = []
@@ -176,7 +174,7 @@ for folder in folders do
                             lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
                         end
                         if /[０-９0-9]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[０-９0-9]{2,3}/, "!")
+                            lineTmp = lineTmp.gsub(/(?<![０-９0-9])[０-９0-9]{2,3}(?![０-９0-9])/, "!")
                         end
                         if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
                             lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
@@ -195,13 +193,12 @@ for folder in folders do
                         lineHeight = heigthLeft <= heigthRight ? heigthLeft : heigthRight
                         lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
                         lineWidth = (widthTop <= widthBottom) ? widthTop : widthBottom
-                        while (((fontSize + 0.1) * lineLength) <= lineHeight) && fontSize <= (lineWidth * 2)
-                            fontSize += 0.1
-                        end
+                        fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
                         for level in textLevels do
                             levelLine[level] = [] if !(levelLine.key?(level))
-                            lineLevelThreshLow = (pageText[b]["lines_coords"][l][0][1] >= (level - heightTreshold) || pageText[b]["lines_coords"][l][1][1] >= (level - heightTreshold))
-                            lineLevelThreshHigh = (pageText[b]["lines_coords"][l][0][1] <= (level + heightTreshold) || pageText[b]["lines_coords"][l][1][1] <= (level + heightTreshold))
+                            lineTop = (pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1])
+                            lineLevelThreshLow = lineTop >= (level - heightTreshold)
+                            lineLevelThreshHigh = lineTop <= (level + heightTreshold)
                             if lineLevelThreshLow && lineLevelThreshHigh
                                 levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
                             end
@@ -213,10 +210,8 @@ for folder in folders do
                         boxLeft = levelWidth[level][2]
                         boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| (line[1] < smallest) && (line[1] > (line[2] * 0.3)) ? line[1] : smallest}
                         lineSpace = 1.1
-                        if boxLength > 1 && (((boxFSize * 1.1) * boxLength) - (boxFSize * 0.1)) < (boxWidth)
-                            while (((boxFSize * lineSpace) * boxLength) - (boxFSize * (lineSpace - 1))) < (boxWidth)
-                                lineSpace += 0.05
-                            end
+                        if boxLength > 1
+                            lineSpace = ((boxWidth - (boxLength * boxFSize)) / (boxLength - 1)) + boxFSize
                         end
                         for line in levelLine[textLevels[level]].reverse do
                             next if line[1] <= (line[2] * 0.5)
@@ -228,6 +223,8 @@ for folder in folders do
                             for char in 0...line.length do
                                 if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                     boxUp -= boxFSize * 0.8
+                                elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
+                                    boxUp -= boxFSize
                                 elsif /[０-９0-9]/.match?(line[char])
                                     numberComp += line[char]
                                     if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
@@ -275,7 +272,7 @@ for folder in folders do
                                     boxUp -= boxFSize
                                 end
                             end
-                            boxLeft += boxFSize * lineSpace
+                            boxLeft += lineSpace
                         end
                     end
                 else
@@ -295,7 +292,7 @@ for folder in folders do
                             lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
                         end
                         if /[０-９0-9]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[０-９0-9]{2,3}/, "!")
+                            lineTmp = lineTmp.gsub(/(?<![０-９0-9])[０-９0-9]{2,3}(?![０-９0-9])/, "!")
                         end
                         if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
                             lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
@@ -309,39 +306,11 @@ for folder in folders do
                             longest = lineLength
                         end
                     end
-                    if isBoxVert
-                        if textBox.length == 1
-                            while ((boxFSize + 0.1) * longest) <= boxHeight && boxFSize <= boxWidth
-                                boxFSize += 0.1
-                            end
-                        else
-                            while ((boxFSize + 0.1) * longest) <= boxHeight
-                                boxFSize += 0.1
-                            end
-                        end
+                    if textBox.length == 1
+                        boxFSize = (boxHeight / longest) <= boxWidth ? (boxHeight / longest) : boxWidth
                     else
-                        if textBox.length == 1
-                            while boxFSize <= boxHeight && ((boxFSize + 0.1) * longest) <= boxWidth
-                                boxFSize += 0.1
-                            end
-                        else
-                            while ((boxFSize + 0.1) * longest) <= boxWidth
-                                boxFSize += 0.1
-                            end
-                        end
-                    end
-                    if isBoxVert
-                        if textBox.length > 1 && (((boxFSize * 1.1) * textBox.length) - (boxFSize * 0.1)) < (boxWidth)
-                            while (((boxFSize * lineSpace) * textBox.length) - (boxFSize * (lineSpace - 1))) < (boxWidth)
-                                lineSpace += 0.05
-                            end
-                        end
-                    else
-                        if textBox.length > 1 && (((boxFSize * 1.1) * textBox.length) - (boxFSize * 0.1)) < (boxHeight)
-                            while (((boxFSize * lineSpace) * textBox.length) - (boxFSize * (lineSpace - 1))) < (boxHeight)
-                                lineSpace += 0.05
-                            end
-                        end
+                        boxFSize = (boxHeight / longest) <= (boxWidth / textBox.length) ? (boxHeight / longest) : (boxWidth / textBox.length)
+                        lineSpace = ((boxWidth - (textBox.length * boxFSize)) / (textBox.length - 1)) + boxFSize
                     end
                     horBoxUp = (pageHeight - boxTop) - boxFSize
                     for lineBef in textBox.reverse do
@@ -354,6 +323,8 @@ for folder in folders do
                         for char in 0...line.length do
                             if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
                                 boxUp -= boxFSize * 0.8
+                            elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
+                                boxUp -= boxFSize
                             elsif /[０-９0-9]/.match?(line[char])
                                 numberComp += line[char]
                                 if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
@@ -401,7 +372,7 @@ for folder in folders do
                                 boxUp -= boxFSize
                             end
                         end
-                        boxLeft += boxFSize * lineSpace
+                        boxLeft += lineSpace
                     end
                 end
             end
