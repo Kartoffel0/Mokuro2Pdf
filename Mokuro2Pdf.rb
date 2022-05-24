@@ -150,9 +150,10 @@ for folder in folders do
                         lineLeft = pageText[b]["lines_coords"][l][3][0]
                         lineRight = pageText[b]["lines_coords"][l][2][0]
                         lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
+                        lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
                         lineWidth = pageText[b]["lines_coords"][l][2][0] - lineLeft
-                        lineHeight = lineBottom - pageText[b]["lines_coords"][l][0][1]
-                        fontSize = (lineWidth / line.length) <= (lineHeight * 1.5) ? (lineWidth / line.length) : lineHeight
+                        lineHeight = lineBottom - lineTop
+                        fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
                         next if fontSize <= (pageText[b]["font_size"] * 0.15)
                         line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                         pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
