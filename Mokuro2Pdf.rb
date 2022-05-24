@@ -147,9 +147,11 @@ for folder in folders do
                 if !isBoxVert
                     for l in 0...pageText[b]["lines"].length do
                         line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
+                        lineLeft = pageText[b]["lines_coords"][l][3][0]
+                        lineRight = pageText[b]["lines_coords"][l][2][0]
                         lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
                         lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
-                        lineWidth = pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0]
+                        lineWidth = lineRight - lineLeft
                         lineHeight = lineBottom - lineTop
                         fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
                         next if fontSize <= (pageText[b]["font_size"] * 0.15)
