@@ -1,5 +1,5 @@
 # Mokuro2Pdf
-Cli Ruby script to generate pdf files with selectable text from Mokuro's html overlay
+Cli Ruby script to generate pdf files with selectable text from [Mokuro](https://github.com/kha-white/mokuro)'s html overlay
 
 <img src="img/Mokuro2Pdf on Kindle.png" width=auto heigth=auto>
 
