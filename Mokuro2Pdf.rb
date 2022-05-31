@@ -134,15 +134,6 @@ for folder in folders do
                 heightTreshold = pageHeight * 0.0075
                 widthThreshold =pageWidth * 0.0075
                 isBoxVert = pageText[b]["vertical"]
-                yAxisMed = pageText[b]["lines_coords"].reduce(0) {|total, line| total + (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}/pageText[b]["lines"].length
-                yAxisBox = pageText[b]["box"][1]
-                rightBox = pageText[b]["box"][2]
-                leftBox = pageText[b]["box"][0]
-                linesLeft = pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest}
-                linesRight = pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] <= line[2][0] ? line[1][0] : line[2][0]) : righttest}
-                yAxisMatch = (yAxisMed >= (yAxisBox - heightTreshold) && yAxisMed <= (yAxisBox + heightTreshold))
-                sidesMatch = ((linesLeft >= (leftBox - widthThreshold) && linesLeft <= (leftBox + widthThreshold)) && (linesRight >= (rightBox - widthThreshold) && linesRight <= (rightBox + widthThreshold)))
-                hasNumbers = /(?<![０-９0-9])[０-９0-9]{2,}(?![０-９0-9])/.match?(pageText[b]["lines"].join(" "))
                 fontSize = 0
                 if !isBoxVert
                     for l in 0...pageText[b]["lines"].length do
@@ -158,7 +149,7 @@ for folder in folders do
                         line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
                         pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
                     end
-                elsif !(yAxisMatch && sidesMatch) || hasNumbers
+                else
                     textLevels = pageText[b]["lines_coords"].map{|line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}.sort.uniq
                     textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - heightTreshold) && y <= (textLevels[idx + 1] + heightTreshold)) do textLevels.delete_at(idx + 1) end} 
                     levelLeft = []
@@ -170,6 +161,12 @@ for folder in folders do
                     end
                     levelWidth = textLevels.map.with_index {|level, idx| [level, levelRight[idx], levelLeft[idx]]}
                     for l in 0...pageText[b]["lines"].length do
+                        minTop = pageText[b]["lines_coords"][l][0][1] >= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
+						minBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
+                        widthTop = pageText[b]["lines_coords"][l][1][0] - pageText[b]["lines_coords"][l][0][0]
+                        widthBottom = pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0]
+                        boxHeight = pageText[b]["box"][3] - pageText[b]["box"][1]
+                        ocrFSize = pageText[b]["font_size"]
                         lineTmp = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
                         if /[!！?？]+$/.match?(lineTmp)
                             lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
@@ -185,15 +182,9 @@ for folder in folders do
                         lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
                         lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
                         lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
-                        heigthLeft = (pageText[b]["lines_coords"][l][3][1] - pageText[b]["lines_coords"][l][0][1])
-                        heigthRight = (pageText[b]["lines_coords"][l][2][1] - pageText[b]["lines_coords"][l][1][1])
-                        boxHeight = (pageText[b]["box"][3] - pageText[b]["box"][1])
-                        widthTop = (pageText[b]["lines_coords"][l][1][0] - pageText[b]["lines_coords"][l][0][0])
-                        widthBottom = (pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0])
-                        ocrFSize = pageText[b]["font_size"]
-                        lineHeight = heigthLeft <= heigthRight ? heigthLeft : heigthRight
+                        lineHeight = minBottom - minTop
                         lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
-                        lineWidth = (widthTop <= widthBottom) ? widthTop : widthBottom
+                        lineWidth = widthTop <= widthBottom ? widthTop : widthBottom
                         fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
                         for level in textLevels do
                             levelLine[level] = [] if !(levelLine.key?(level))
@@ -216,31 +207,32 @@ for folder in folders do
                         end
                         for line in levelLine[textLevels[level]].reverse do
                             next if line[1] <= (line[2] * 0.5)
+                            fontSize = line[1]
                             line = line[0].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
-                            boxUp = (pageHeight - textLevels[level]) - boxFSize
+                            boxUp = (pageHeight - textLevels[level]) - fontSize
                             numberComp = ''
                             ponctComp = ''
                             romComp = ''
                             for char in 0...line.length do
                                 if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                    boxUp -= boxFSize * 0.8
+                                    boxUp -= fontSize * 0.8
                                 elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
-                                    boxUp -= boxFSize
+                                    boxUp -= fontSize
                                 elsif /[０-９0-9]/.match?(line[char])
                                     numberComp += line[char]
                                     if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
                                         if numberComp.length == 2
-                                            tmpFSize = boxFSize * 0.5
+                                            tmpFSize = fontSize * 0.5
                                             pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
-                                            boxUp -= boxFSize
+                                            boxUp -= fontSize
                                         elsif numberComp.length == 3
-                                            tmpFSize = boxFSize * 0.35
+                                            tmpFSize = fontSize * 0.35
                                             pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
-                                            boxUp -= boxFSize
+                                            boxUp -= fontSize
                                         else
                                             for n in 0...numberComp.length
-                                                pdf.draw_text numberComp[n], size: boxFSize, at: [boxLeft, boxUp]
-                                                boxUp -= boxFSize
+                                                pdf.draw_text numberComp[n], size: fontSize, at: [boxLeft, boxUp]
+                                                boxUp -= fontSize
                                             end
                                         end
                                         numberComp = ''
@@ -248,132 +240,33 @@ for folder in folders do
                                 elsif /[!！?？]/.match?(line[char])
                                     ponctComp += line[char]
                                     if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
-                                        tmpFSize = boxFSize / ponctComp.length
+                                        tmpFSize = fontSize / ponctComp.length
                                         pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                        boxUp -= boxFSize
+                                        boxUp -= fontSize
                                         ponctComp = ''
                                     end
                                 elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
                                     romComp += line[char]
                                     if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
                                         if romComp.length <= 3
-                                            tmpFSize = boxFSize / romComp.length
+                                            tmpFSize = fontSize / romComp.length
                                             pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                            boxUp -= boxFSize
+                                            boxUp -= fontSize
                                         else
                                             for l in 0...romComp.length
-                                                pdf.draw_text romComp[l], size: boxFSize, at: [boxLeft, boxUp]
-                                                boxUp -= boxFSize
+                                                pdf.draw_text romComp[l], size: fontSize, at: [boxLeft, boxUp]
+                                                boxUp -= fontSize
                                             end
                                         end
                                         romComp = ''
                                     end
                                 else
-                                    pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                    boxUp -= boxFSize
+                                    pdf.draw_text line[char], size: fontSize, at: [boxLeft, boxUp]
+                                    boxUp -= fontSize
                                 end
                             end
                             boxLeft += lineSpace
                         end
-                    end
-                else
-                    boxLeft = pageText[b]["box"][0]
-                    boxTop = pageText[b]["box"][1]
-                    boxWidth = pageText[b]["box"][2] - pageText[b]["box"][0]
-                    boxHeight = pageText[b]["box"][3] - pageText[b]["box"][1]
-                    isBoxVert = pageText[b]["vertical"]
-                    textBox = pageText[b]["lines"]
-                    ocrFSize = pageText[b]["font_size"]
-                    boxFSize = 0
-                    longest = 1
-                    lineSpace = 1.1
-                    for l in textBox do
-                        lineTmp = l.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
-                        if /[!！?？]+$/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
-                        end
-                        if /[０-９0-9]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/(?<![０-９0-9])[０-９0-9]{2,3}(?![０-９0-9])/, "!")
-                        end
-                        if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
-                        end
-                        scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                        scanPt = lineTmp.scan(/[。\.．、，,]+$/)
-                        lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                        lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
-                        lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
-                        if lineLength > longest
-                            longest = lineLength
-                        end
-                    end
-                    if textBox.length == 1
-                        boxFSize = (boxHeight / longest) <= boxWidth ? (boxHeight / longest) : boxWidth
-                    else
-                        boxFSize = (boxHeight / longest) <= (boxWidth / textBox.length) ? (boxHeight / longest) : (boxWidth / textBox.length)
-                        lineSpace = ((boxWidth - (textBox.length * boxFSize)) / (textBox.length - 1)) + boxFSize
-                    end
-                    horBoxUp = (pageHeight - boxTop) - boxFSize
-                    for lineBef in textBox.reverse do
-                        next if boxFSize <= (ocrFSize * 0.5)
-                        boxUp = (pageHeight - boxTop) - boxFSize
-                        line = lineBef.strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
-                        numberComp = ''
-                        ponctComp = ''
-                        romComp = ''
-                        for char in 0...line.length do
-                            if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                boxUp -= boxFSize * 0.8
-                            elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
-                                boxUp -= boxFSize
-                            elsif /[０-９0-9]/.match?(line[char])
-                                numberComp += line[char]
-                                if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
-                                    if numberComp.length == 2
-                                        tmpFSize = boxFSize * 0.5
-                                        pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
-                                        boxUp -= boxFSize
-                                    elsif numberComp.length == 3
-                                        tmpFSize = boxFSize * 0.35
-                                        pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
-                                        boxUp -= boxFSize
-                                    else
-                                        for n in 0...numberComp.length
-                                            pdf.draw_text numberComp[n], size: boxFSize, at: [boxLeft, boxUp]
-                                            boxUp -= boxFSize
-                                        end
-                                    end
-                                    numberComp = ''
-                                end
-                            elsif /[!！?？]/.match?(line[char])
-                                ponctComp += line[char]
-                                if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
-                                    tmpFSize = boxFSize / ponctComp.length
-                                    pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                    boxUp -= boxFSize
-                                    ponctComp = ''
-                                end
-                            elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
-                                romComp += line[char]
-                                if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
-                                    if romComp.length <= 3
-                                        tmpFSize = boxFSize / romComp.length
-                                        pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                        boxUp -= boxFSize
-                                    else
-                                        for l in 0...romComp.length
-                                            pdf.draw_text romComp[l], size: boxFSize, at: [boxLeft, boxUp]
-                                            boxUp -= boxFSize
-                                        end
-                                    end
-                                    romComp = ''
-                                end
-                            else
-                                pdf.draw_text line[char], size: boxFSize, at: [boxLeft, boxUp]
-                                boxUp -= boxFSize
-                            end
-                        end
-                        boxLeft += lineSpace
                     end
                 end
             end
