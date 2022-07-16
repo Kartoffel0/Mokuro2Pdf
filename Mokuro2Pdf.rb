@@ -29,6 +29,9 @@ OptionParser.new do |opt|
     opt.on("-f FONT_TRANSPARENCY", "--font_transparency FONT_TRANSPARENCY", "Selectable text's transparency, default = 0.2") do |f|
         options[:fontTransparency] = f.to_f
     end
+    opt.on("-w OUTPUT_FOLDER", "--write_to OUTPUT_FOLDER", "Output folder") do |w|
+        options[:outputFolder] = w
+    end
 end.parse!
 puts ""
 puts "Mokuro2Pdf"
@@ -43,6 +46,14 @@ if options.key?(:fontTransparency)
 else
     puts "Using the default(0.2) font transparency"
     options[:fontTransparency] = 0.2
+end
+if options.key?(:outputFolder)
+    puts "Using the defined #{options[:outputFolder]} output folder"
+    if !(options[:outputFolder] =~ /[\\\/]$/)
+        options[:outputFolder] += '/'
+    end
+else
+    options[:outputFolder] = ""
 end
 folders = []
 if !options.key?(:parentImg)
@@ -119,7 +130,7 @@ for folder in folders do
         pages = folder[0]
         ocrs = folder[1]
         info = folder[2]
-        folderName = folder[3] !=~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? folder[3] : Regexp.escape(folder[3].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0])
+        folderName = folder[3] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? folder[3].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : folder[3]
         pagesJson = {}
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
@@ -127,7 +138,7 @@ for folder in folders do
             pageWidth = page["img_width"]
             pageHeight = page["img_height"]
             pageImg = pages[i]
-            pagesJson[i+1] = pages[i].match(/#{folderName}.*?$/)[0]
+            pagesJson[i+1] = pages[i].match(/#{Regexp.escape(folderName)}.*?$/)[0]
             if options[:gamma] == 1
                 pageBgMagickPath = pageImg
             else
@@ -288,13 +299,14 @@ for folder in folders do
                 end
             end
         end
-        File.write("#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
+        FileUtils.mkdir_p options[:outputFolder] + "Memo2Anki_Jsons"
+        File.write("#{options[:outputFolder]}Memo2Anki_Jsons/#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
         if options[:gamma] != 1
             FileUtils.remove_dir("tmp")
         end
-        pdf.render_file("#{info[:Title]} - MKR2PDF.pdf")
+        pdf.render_file("#{options[:outputFolder]}#{info[:Title]} - MKR2PDF.pdf")
         puts "Done!"
     rescue => e
-        puts "An error of type #{e.class} happened, message is #{e.message}"
+        puts e
     end
 end
