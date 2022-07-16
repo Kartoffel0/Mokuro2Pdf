@@ -3,6 +3,7 @@ require 'json'
 require 'mini_magick'
 require 'fileutils'
 require 'optparse'
+require 'find'
 
 options = {}
 OptionParser.new do |opt|
@@ -56,23 +57,29 @@ if !options.key?(:parentImg)
     else
         puts "Using the defined '#{options[:ocrFolder]}/' ocr folder path"
     end
-    pages = Dir.glob(["*.jpg", "*.jpeg", "*.jpe", "*.jif", "*.jfif", "*.jfi", "*.png", "*.gif", "*.webp", "*.tiff", "*.tif", "*.psd", "*.raw", "*.arw", "*.cr2", "*.nrw", "*.k25", "*.bmp", "*.dib", "*.jp2", "*.j2k", "*.jpf", "*.jpx", "*.jpm", "*.mj2"], base: options[:imageFolder]).sort
-    ocrs = Dir.glob("*.json", base: options[:ocrFolder]).sort
-    pages = pages.select {|item| File.file?("#{options[:imageFolder]}/#{item}")}
-    ocrs = ocrs.select {|item| File.file?("#{options[:ocrFolder]}/#{item}")}
-    puts "#{pages.length} Pages found"
-    puts "#{ocrs.length} Jsons found"
-    info = {
-        Title: options[:filename],
-        Language: 'ja'
-    }
-    folder.append(pages)
-    folder.append(ocrs)
-    folder.append(info)
-    folder.append(options[:imageFolder])
-    folder.append(options[:ocrFolder])
-    folder.append(options[:imageFolder])
-    folders.append(folder)
+    begin
+        pages = []
+        Find.find(options[:imageFolder]) do |path|
+            pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/
+        end
+        ocrs = []
+        Find.find(options[:ocrFolder]) do |path|
+            ocrs << path if path =~ /.*\.json$/
+        end
+        puts "#{pages.length} Pages found"
+        puts "#{ocrs.length} Jsons found"
+        info = {
+            Title: options[:filename],
+            Language: 'ja'
+        }
+        folder.append(pages)
+        folder.append(ocrs)
+        folder.append(info)
+        folder.append(options[:imageFolder])
+        folders.append(folder)
+    rescue
+        puts "No Pages/Jsons found"
+    end
 else
     volumesImg = Dir.glob("*", base: options[:parentImg]).sort
     volumesImg = volumesImg.select {|item| File.directory?("#{options[:parentImg]}/#{item}")}
@@ -83,199 +90,211 @@ else
             Title: volume,
             Language: 'ja'
         }
-        pages = Dir.glob(["*.jpg", "*.jpeg", "*.jpe", "*.jif", "*.jfif", "*.jfi", "*.png", "*.gif", "*.webp", "*.tiff", "*.tif", "*.psd", "*.raw", "*.arw", "*.cr2", "*.nrw", "*.k25", "*.bmp", "*.dib", "*.jp2", "*.j2k", "*.jpf", "*.jpx", "*.jpm", "*.mj2"], base: "#{options[:parentImg]}/#{volume}").sort
-        ocrs = Dir.glob("*.json", base: "#{options[:parentOcr]}/#{volume}").sort
-        pages = pages.select {|item| File.file?("#{options[:parentImg]}/#{volume}/#{item}")}
-        ocrs = ocrs.select {|item| File.file?("#{options[:parentOcr]}/#{volume}/#{item}")}
-        puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found\n"
-        folder.append(pages)
-        folder.append(ocrs)
-        folder.append(info)
-        folder.append("#{options[:parentImg]}/#{volume}")
-        folder.append("#{options[:parentOcr]}/#{volume}")
-        folder.append(volume)
-        folders.append(folder)
+        begin
+            pages = []
+            pagesTmp = []
+            Find.find("#{options[:parentImg]}/#{volume}") do |path|
+                pagesTmp << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/
+            end
+            pages.concat(pagesTmp.sort)
+            ocrs = []
+            ocrsTmp = []
+            Find.find("#{options[:parentOcr]}/#{volume}") do |path|
+                ocrsTmp << path if path =~ /.*\.json$/
+            end
+            ocrs.concat(ocrsTmp.sort)
+            puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found\n"
+            folder.append(pages)
+            folder.append(ocrs)
+            folder.append(info)
+            folder.append("#{options[:parentImg]}/#{volume}")
+            folders.append(folder)
+        rescue
+            puts "\t#{volume} - No Pages/Jsons found, skipping folder"
+        end
     end
 end
 for folder in folders do
-    pages = folder[0]
-    ocrs = folder[1]
-    info = folder[2]
-    imgFolder = folder[3]
-    ocrFolder = folder[4]
-    jsonFolderPath = folder[5]
-    pagesJson = {}
-    puts "\nProcessing #{info[:Title]}..."
-    for i in 0...pages.length do
-        page = JSON.parse(File.read("#{ocrFolder}/#{ocrs[i]}"))
-        pageWidth = page["img_width"]
-        pageHeight = page["img_height"]
-        pageImg = "#{imgFolder}/#{pages[i]}"
-        pagesJson[i+1] = "#{jsonFolderPath}/#{pages[i]}"
-        if options[:gamma] == 1
-            pageBgMagickPath = pageImg
-        else
-            FileUtils.mkdir_p "tmp"
-            pageBgMagick = MiniMagick::Image.open(pageImg)
-            pageBgMagick.gamma options[:gamma]
-            pageBgMagick.write "tmp/page-#{i}"
-            pageBgMagickPath = "tmp/page-#{i}"
-        end
-        if i == 0
-            pdf = Prawn::Document.new(page_size: [pageWidth, pageHeight], margin: [0, 0, 0, 0], info: info)
-        else
-            pdf.start_new_page(size: [pageWidth, pageHeight], margin: [0, 0, 0, 0])
-        end
-        pdf.image pageBgMagickPath, height: pageHeight, width: pageWidth, at: [0, pageHeight]
-        pageText = page["blocks"]
-        pdf.transparent(options[:fontTransparency]) do
-            pdf.font("ipaexg.ttf")
-            for b in 0...pageText.length do
-                heightTreshold = pageHeight * 0.0075
-                widthThreshold =pageWidth * 0.0075
-                isBoxVert = pageText[b]["vertical"]
-                fontSize = 0
-                if !isBoxVert
-                    for l in 0...pageText[b]["lines"].length do
-                        line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
-                        lineLeft = pageText[b]["lines_coords"][l][3][0]
-                        lineRight = pageText[b]["lines_coords"][l][2][0]
-                        lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
-                        lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
-                        lineWidth = lineRight - lineLeft
-                        lineHeight = lineBottom - lineTop
-                        fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
-                        next if fontSize <= (pageText[b]["font_size"] * 0.15)
-                        line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
-                        pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
-                    end
-                else
-                    textLevels = pageText[b]["lines_coords"].map{|line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}.sort.uniq
-                    textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - heightTreshold) && y <= (textLevels[idx + 1] + heightTreshold)) do textLevels.delete_at(idx + 1) end} 
-                    levelLeft = []
-                    levelRight = []
-                    levelLine = {}
-                    for level in 0...textLevels.length do
-                        levelLeft << pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest : lefttest}
-                        levelRight << pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) : righttest : righttest}
-                    end
-                    levelWidth = textLevels.map.with_index {|level, idx| [level, levelRight[idx], levelLeft[idx]]}
-                    for l in 0...pageText[b]["lines"].length do
-                        minTop = pageText[b]["lines_coords"][l][0][1] >= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
-						minBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
-                        widthTop = pageText[b]["lines_coords"][l][1][0] - pageText[b]["lines_coords"][l][0][0]
-                        widthBottom = pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0]
-                        boxHeight = pageText[b]["box"][3] - pageText[b]["box"][1]
-                        ocrFSize = pageText[b]["font_size"]
-                        lineTmp = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
-                        if /[!！?？]+$/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
+    begin
+        pages = folder[0]
+        ocrs = folder[1]
+        info = folder[2]
+        folderName = folder[3] !=~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? folder[3] : Regexp.escape(folder[3].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0])
+        pagesJson = {}
+        puts "\nProcessing #{info[:Title]}..."
+        for i in 0...pages.length do
+            page = JSON.parse(File.read(ocrs[i]))
+            pageWidth = page["img_width"]
+            pageHeight = page["img_height"]
+            pageImg = pages[i]
+            pagesJson[i+1] = pages[i].match(/#{folderName}.*?$/)[0]
+            if options[:gamma] == 1
+                pageBgMagickPath = pageImg
+            else
+                FileUtils.mkdir_p "tmp"
+                pageBgMagick = MiniMagick::Image.open(pageImg)
+                pageBgMagick.gamma options[:gamma]
+                pageBgMagick.write "tmp/page-#{i}"
+                pageBgMagickPath = "tmp/page-#{i}"
+            end
+            if i == 0
+                pdf = Prawn::Document.new(page_size: [pageWidth, pageHeight], margin: [0, 0, 0, 0], info: info)
+            else
+                pdf.start_new_page(size: [pageWidth, pageHeight], margin: [0, 0, 0, 0])
+            end
+            pdf.image pageBgMagickPath, height: pageHeight, width: pageWidth, at: [0, pageHeight]
+            pageText = page["blocks"]
+            pdf.transparent(options[:fontTransparency]) do
+                pdf.font("ipaexg.ttf")
+                for b in 0...pageText.length do
+                    heightTreshold = pageHeight * 0.0075
+                    widthThreshold =pageWidth * 0.0075
+                    isBoxVert = pageText[b]["vertical"]
+                    fontSize = 0
+                    if !isBoxVert
+                        for l in 0...pageText[b]["lines"].length do
+                            line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
+                            lineLeft = pageText[b]["lines_coords"][l][3][0]
+                            lineRight = pageText[b]["lines_coords"][l][2][0]
+                            lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
+                            lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
+                            lineWidth = lineRight - lineLeft
+                            lineHeight = lineBottom - lineTop
+                            fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
+                            next if fontSize <= (pageText[b]["font_size"] * 0.15)
+                            line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
+                            pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
                         end
-                        if /[０-９0-9]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/(?<![０-９0-9])[０-９0-9]{2,3}(?![０-９0-9])/, "!")
+                    else
+                        textLevels = pageText[b]["lines_coords"].map{|line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}.sort.uniq
+                        textLevels = textLevels.each_with_index {|y, idx| while idx + 1 < textLevels.length && (y >= (textLevels[idx + 1] - heightTreshold) && y <= (textLevels[idx + 1] + heightTreshold)) do textLevels.delete_at(idx + 1) end} 
+                        levelLeft = []
+                        levelRight = []
+                        levelLine = {}
+                        for level in 0...textLevels.length do
+                            levelLeft << pageText[b]["lines_coords"].reduce(pageWidth) {|lefttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) < lefttest ? (line[0][0] <= line[3][0] ? line[0][0] : line[3][0]) : lefttest : lefttest}
+                            levelRight << pageText[b]["lines_coords"].reduce(0) {|righttest, line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) >= (textLevels[level] - heightTreshold) && (line[0][1] <= line[1][1] ? line[0][1] : line[1][1]) <= (textLevels[level] + heightTreshold) ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) > righttest ? (line[1][0] >= line[2][0] ? line[1][0] : line[2][0]) : righttest : righttest}
                         end
-                        if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
-                            lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
-                        end
-                        scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
-                        scanPt = lineTmp.scan(/[。\.．、，,]+$/)
-                        lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
-                        lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
-                        lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
-                        lineHeight = minBottom - minTop
-                        lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
-                        lineWidth = widthTop <= widthBottom ? widthTop : widthBottom
-                        fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
-                        for level in textLevels do
-                            levelLine[level] = [] if !(levelLine.key?(level))
-                            lineTop = (pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1])
-                            lineLevelThreshLow = lineTop >= (level - heightTreshold)
-                            lineLevelThreshHigh = lineTop <= (level + heightTreshold)
-                            if lineLevelThreshLow && lineLevelThreshHigh
-                                levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
+                        levelWidth = textLevels.map.with_index {|level, idx| [level, levelRight[idx], levelLeft[idx]]}
+                        for l in 0...pageText[b]["lines"].length do
+                            minTop = pageText[b]["lines_coords"][l][0][1] >= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
+                            minBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
+                            widthTop = pageText[b]["lines_coords"][l][1][0] - pageText[b]["lines_coords"][l][0][0]
+                            widthBottom = pageText[b]["lines_coords"][l][2][0] - pageText[b]["lines_coords"][l][3][0]
+                            boxHeight = pageText[b]["box"][3] - pageText[b]["box"][1]
+                            ocrFSize = pageText[b]["font_size"]
+                            lineTmp = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "")
+                            if /[!！?？]+$/.match?(lineTmp)
+                                lineTmp = lineTmp.gsub(/[!！?？]+$/, "!")
                             end
-                        end
-                    end
-                    for level in 0...textLevels.length do
-                        boxWidth = levelWidth[level][1] - levelWidth[level][2]
-                        boxLength = levelLine[textLevels[level]].length
-                        boxLeft = levelWidth[level][2]
-                        boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| (line[1] < smallest) && (line[1] > (line[2] * 0.3)) ? line[1] : smallest}
-                        lineSpace = 1.1
-                        if boxLength > 1
-                            lineSpace = ((boxWidth - (boxLength * boxFSize)) / (boxLength - 1)) + boxFSize
-                        end
-                        for line in levelLine[textLevels[level]].reverse do
-                            next if line[1] <= (line[2] * 0.5)
-                            fontSize = line[1]
-                            line = line[0].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
-                            boxUp = (pageHeight - textLevels[level]) - fontSize
-                            numberComp = ''
-                            ponctComp = ''
-                            romComp = ''
-                            for char in 0...line.length do
-                                if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
-                                    boxUp -= fontSize * 0.8
-                                elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
-                                    boxUp -= fontSize
-                                elsif /[０-９0-9]/.match?(line[char])
-                                    numberComp += line[char]
-                                    if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
-                                        if numberComp.length == 2
-                                            tmpFSize = fontSize * 0.5
-                                            pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
-                                            boxUp -= fontSize
-                                        elsif numberComp.length == 3
-                                            tmpFSize = fontSize * 0.35
-                                            pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
-                                            boxUp -= fontSize
-                                        else
-                                            for n in 0...numberComp.length
-                                                pdf.draw_text numberComp[n], size: fontSize, at: [boxLeft, boxUp]
-                                                boxUp -= fontSize
-                                            end
-                                        end
-                                        numberComp = ''
-                                    end
-                                elsif /[!！?？]/.match?(line[char])
-                                    ponctComp += line[char]
-                                    if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
-                                        tmpFSize = fontSize / ponctComp.length
-                                        pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                        boxUp -= fontSize
-                                        ponctComp = ''
-                                    end
-                                elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
-                                    romComp += line[char]
-                                    if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
-                                        if romComp.length <= 3
-                                            tmpFSize = fontSize / romComp.length
-                                            pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
-                                            boxUp -= fontSize
-                                        else
-                                            for l in 0...romComp.length
-                                                pdf.draw_text romComp[l], size: fontSize, at: [boxLeft, boxUp]
-                                                boxUp -= fontSize
-                                            end
-                                        end
-                                        romComp = ''
-                                    end
-                                else
-                                    pdf.draw_text line[char], size: fontSize, at: [boxLeft, boxUp]
-                                    boxUp -= fontSize
+                            if /[０-９0-9]{2,3}/.match?(lineTmp)
+                                lineTmp = lineTmp.gsub(/(?<![０-９0-9])[０-９0-9]{2,3}(?![０-９0-9])/, "!")
+                            end
+                            if /[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/.match?(lineTmp)
+                                lineTmp = lineTmp.gsub(/[a-zA-Zａ-ｚＡ-Ｚ]{2,3}/, "!")
+                            end
+                            scanPar = lineTmp.scan(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/)
+                            scanPt = lineTmp.scan(/[。\.．、，,]+$/)
+                            lineTmp = lineTmp.gsub(/[《『「(\[\{（〔［｛〈【＜≪”"“゛″〝〟＂≫＞】〉｝］〕）\}\])」』》]/, "")
+                            lineTmp = lineTmp.gsub(/[。\.．、，,]+$/, "")
+                            lineLength = lineTmp.length + (scanPar.length > 0 ? scanPar.length * 0.8 : 0) + (scanPt.length > 0 ? scanPt.length * 0.5 : 0)
+                            lineHeight = minBottom - minTop
+                            lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
+                            lineWidth = widthTop <= widthBottom ? widthTop : widthBottom
+                            fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
+                            for level in textLevels do
+                                levelLine[level] = [] if !(levelLine.key?(level))
+                                lineTop = (pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1])
+                                lineLevelThreshLow = lineTop >= (level - heightTreshold)
+                                lineLevelThreshHigh = lineTop <= (level + heightTreshold)
+                                if lineLevelThreshLow && lineLevelThreshHigh
+                                    levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
                                 end
                             end
-                            boxLeft += lineSpace
+                        end
+                        for level in 0...textLevels.length do
+                            boxWidth = levelWidth[level][1] - levelWidth[level][2]
+                            boxLength = levelLine[textLevels[level]].length
+                            boxLeft = levelWidth[level][2]
+                            boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| (line[1] < smallest) && (line[1] > (line[2] * 0.3)) ? line[1] : smallest}
+                            lineSpace = 1.1
+                            if boxLength > 1
+                                lineSpace = ((boxWidth - (boxLength * boxFSize)) / (boxLength - 1)) + boxFSize
+                            end
+                            for line in levelLine[textLevels[level]].reverse do
+                                next if line[1] <= (line[2] * 0.5)
+                                fontSize = line[1]
+                                line = line[0].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
+                                boxUp = (pageHeight - textLevels[level]) - fontSize
+                                numberComp = ''
+                                ponctComp = ''
+                                romComp = ''
+                                for char in 0...line.length do
+                                    if /[《『「\(\[\{（〔［｛〈【＜≪≫＞】〉｝］〕）\}\]\)」』》]/.match?(line[char])
+                                        boxUp -= fontSize * 0.8
+                                    elsif /[。\.．、，,…‥!！?？：～~]/.match?(line[char])
+                                        boxUp -= fontSize
+                                    elsif /[０-９0-9]/.match?(line[char])
+                                        numberComp += line[char]
+                                        if (char + 1) > line.length || !/[０-９0-9]/.match?(line[char + 1])
+                                            if numberComp.length == 2
+                                                tmpFSize = fontSize * 0.5
+                                                pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/2)]
+                                                boxUp -= fontSize
+                                            elsif numberComp.length == 3
+                                                tmpFSize = fontSize * 0.35
+                                                pdf.draw_text numberComp, size: tmpFSize, at: [boxLeft, boxUp + (tmpFSize/3)]
+                                                boxUp -= fontSize
+                                            else
+                                                for n in 0...numberComp.length
+                                                    pdf.draw_text numberComp[n], size: fontSize, at: [boxLeft, boxUp]
+                                                    boxUp -= fontSize
+                                                end
+                                            end
+                                            numberComp = ''
+                                        end
+                                    elsif /[!！?？]/.match?(line[char])
+                                        ponctComp += line[char]
+                                        if (char + 1) > line.length || !/[!！?？]/.match?(line[char + 1])
+                                            tmpFSize = fontSize / ponctComp.length
+                                            pdf.draw_text ponctComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                            boxUp -= fontSize
+                                            ponctComp = ''
+                                        end
+                                    elsif /[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char])
+                                        romComp += line[char]
+                                        if (char + 1) > line.length || !/[a-zA-Zａ-ｚＡ-Ｚ]/.match?(line[char + 1])
+                                            if romComp.length <= 3
+                                                tmpFSize = fontSize / romComp.length
+                                                pdf.draw_text romComp, size: tmpFSize, at: [boxLeft, boxUp]
+                                                boxUp -= fontSize
+                                            else
+                                                for l in 0...romComp.length
+                                                    pdf.draw_text romComp[l], size: fontSize, at: [boxLeft, boxUp]
+                                                    boxUp -= fontSize
+                                                end
+                                            end
+                                            romComp = ''
+                                        end
+                                    else
+                                        pdf.draw_text line[char], size: fontSize, at: [boxLeft, boxUp]
+                                        boxUp -= fontSize
+                                    end
+                                end
+                                boxLeft += lineSpace
+                            end
                         end
                     end
                 end
             end
         end
+        File.write("#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
+        if options[:gamma] != 1
+            FileUtils.remove_dir("tmp")
+        end
+        pdf.render_file("#{info[:Title]} - MKR2PDF.pdf")
+        puts "Done!"
+    rescue => e
+        puts "An error of type #{e.class} happened, message is #{e.message}"
     end
-    File.write("#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
-    if options[:gamma] != 1
-        FileUtils.remove_dir("tmp")
-    end
-    pdf.render_file("#{info[:Title]} - MKR2PDF.pdf")
-    puts "Done!"
 end
