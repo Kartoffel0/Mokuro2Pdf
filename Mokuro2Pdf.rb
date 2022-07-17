@@ -71,11 +71,11 @@ if !options.key?(:parentImg)
     begin
         pages = []
         Find.find(options[:imageFolder]) do |path|
-            pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/
+            pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
         end
         ocrs = []
         Find.find(options[:ocrFolder]) do |path|
-            ocrs << path if path =~ /.*\.json$/
+            ocrs << path if path =~ /.*\.json$/i
         end
         puts "#{pages.length} Pages found"
         puts "#{ocrs.length} Jsons found"
@@ -105,21 +105,25 @@ else
             pages = []
             pagesTmp = []
             Find.find("#{options[:parentImg]}/#{volume}") do |path|
-                pagesTmp << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/
+                pagesTmp << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
             end
             pages.concat(pagesTmp.sort)
             ocrs = []
             ocrsTmp = []
             Find.find("#{options[:parentOcr]}/#{volume}") do |path|
-                ocrsTmp << path if path =~ /.*\.json$/
+                ocrsTmp << path if path =~ /.*\.json$/i
             end
             ocrs.concat(ocrsTmp.sort)
-            puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found\n"
-            folder.append(pages)
-            folder.append(ocrs)
-            folder.append(info)
-            folder.append("#{options[:parentImg]}/#{volume}")
-            folders.append(folder)
+            if pages.length > 0 && ocrs.length > 0
+                puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found\n"
+                folder.append(pages)
+                folder.append(ocrs)
+                folder.append(info)
+                folder.append("#{options[:parentImg]}/#{volume}")
+                folders.append(folder)
+            else
+                puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found. Skipping folder\n"
+            end
         rescue
             puts "\t#{volume} - No Pages/Jsons found, skipping folder"
         end
