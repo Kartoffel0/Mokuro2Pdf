@@ -58,7 +58,7 @@ end
 folders = []
 if !options.key?(:parentImg)
     if !options.key?(:filename) || options[:filename] == ''
-        options[:filename] = options[:imageFolder]
+        options[:filename] = options[:imageFolder] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? options[:imageFolder].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : options[:imageFolder]
     end
     folder = []
     puts "Converting '#{options[:imageFolder]}/' to '#{options[:filename]} - MKR2PDF.pdf'"
