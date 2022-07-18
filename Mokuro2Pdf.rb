@@ -169,16 +169,18 @@ for folder in folders do
                     if !isBoxVert
                         for l in 0...pageText[b]["lines"].length do
                             line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
-                            lineLeft = pageText[b]["lines_coords"][l][3][0]
-                            lineRight = pageText[b]["lines_coords"][l][2][0]
-                            lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
-                            lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
-                            lineWidth = lineRight - lineLeft
-                            lineHeight = lineBottom - lineTop
-                            fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
-                            next if fontSize <= (pageText[b]["font_size"] * 0.15)
-                            line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
-                            pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
+                            if line.length > 0
+                                lineLeft = pageText[b]["lines_coords"][l][3][0]
+                                lineRight = pageText[b]["lines_coords"][l][2][0]
+                                lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
+                                lineTop = pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1]
+                                lineWidth = lineRight - lineLeft
+                                lineHeight = lineBottom - lineTop
+                                fontSize = (lineWidth / line.length) <= (lineHeight * 2) ? (lineWidth / line.length) : (lineHeight * 2)
+                                next if fontSize <= (pageText[b]["font_size"] * 0.15)
+                                line = pageText[b]["lines"][l].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
+                                pdf.draw_text line, size: fontSize, at:[lineLeft, pageHeight - lineBottom]
+                            end
                         end
                     else
                         textLevels = pageText[b]["lines_coords"].map{|line| (line[0][1] <= line[1][1] ? line[0][1] : line[1][1])}.sort.uniq
@@ -216,14 +218,16 @@ for folder in folders do
                             lineHeight = minBottom - minTop
                             lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
                             lineWidth = widthTop <= widthBottom ? widthTop : widthBottom
-                            fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
-                            for level in textLevels do
-                                levelLine[level] = [] if !(levelLine.key?(level))
-                                lineTop = (pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1])
-                                lineLevelThreshLow = lineTop >= (level - heightTreshold)
-                                lineLevelThreshHigh = lineTop <= (level + heightTreshold)
-                                if lineLevelThreshLow && lineLevelThreshHigh
-                                    levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
+                            if lineLength > 0
+                                fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
+                                for level in textLevels do
+                                    levelLine[level] = [] if !(levelLine.key?(level))
+                                    lineTop = (pageText[b]["lines_coords"][l][0][1] <= pageText[b]["lines_coords"][l][1][1] ? pageText[b]["lines_coords"][l][0][1] : pageText[b]["lines_coords"][l][1][1])
+                                    lineLevelThreshLow = lineTop >= (level - heightTreshold)
+                                    lineLevelThreshHigh = lineTop <= (level + heightTreshold)
+                                    if lineLevelThreshLow && lineLevelThreshHigh
+                                        levelLine[level] << [pageText[b]["lines"][l], fontSize, ocrFSize]
+                                    end
                                 end
                             end
                         end
