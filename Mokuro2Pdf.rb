@@ -146,12 +146,11 @@ for folder in folders do
                 pageWidth = page[:width]
                 pageHeight = page[:height]
             end
-            pageImg = pages[i]
             if options[:gamma] == 1
-                pageBgMagickPath = pageImg
+                pageBgMagickPath = pages[i]
             else
                 FileUtils.mkdir_p "tmp"
-                pageBgMagick = MiniMagick::Image.open(pageImg)
+                pageBgMagick = MiniMagick::Image.open(pages[i])
                 pageBgMagick.gamma options[:gamma]
                 pageBgMagick.write "tmp/page-#{i}"
                 pageBgMagickPath = "tmp/page-#{i}"
