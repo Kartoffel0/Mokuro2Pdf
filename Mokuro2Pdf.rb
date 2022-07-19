@@ -75,7 +75,7 @@ if !options.key?(:parentImg)
         end
         jsons = {}
         Find.find(options[:ocrFolder]) do |path|
-            jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]] = path if path =~ /.*\.json$/i
+            jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.json$)/i)[0]] = path if path =~ /.*\.json$/i
         end
         puts "#{pages.length} Pages found"
         puts "#{jsons.length} Jsons found"
@@ -108,7 +108,7 @@ else
             end
             jsons = {}
             Find.find("#{options[:parentOcr]}/#{volume}") do |path|
-                jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]] = path if path =~ /.*\.json$/i
+                jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.json$)/i)[0]] = path if path =~ /.*\.json$/i
             end
             if pages.length > 0 && jsons.length > 0
                 puts "\t#{volume} - #{pages.length} Pages found, #{jsons.length} Jsons found\n"
@@ -136,7 +136,7 @@ for folder in folders do
         for i in 0...pages.length do
             if jsons.include? pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]
                 has_Json = true
-                page = JSON.parse(File.read(jsons[pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]]))
+                page = JSON.parse(File.read(jsons[pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/)[0]]))
                 pageWidth = page["img_width"]
                 pageHeight = page["img_height"]
             else
