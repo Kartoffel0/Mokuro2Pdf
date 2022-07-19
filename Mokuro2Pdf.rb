@@ -134,9 +134,9 @@ for folder in folders do
         pagesJson = {}
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
-            if jsons.include? pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]
+            if jsons.include? pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]
                 has_Json = true
-                page = JSON.parse(File.read(jsons[pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/)[0]]))
+                page = JSON.parse(File.read(jsons[pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]]))
                 pageWidth = page["img_width"]
                 pageHeight = page["img_height"]
             else
