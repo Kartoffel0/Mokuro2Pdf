@@ -73,18 +73,18 @@ if !options.key?(:parentImg)
         Find.find(options[:imageFolder]) do |path|
             pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
         end
-        ocrs = []
+        jsons = {}
         Find.find(options[:ocrFolder]) do |path|
-            ocrs << path if path =~ /.*\.json$/i
+            jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]] = path if path =~ /.*\.json$/i
         end
         puts "#{pages.length} Pages found"
-        puts "#{ocrs.length} Jsons found"
+        puts "#{jsons.length} Jsons found"
         info = {
             Title: options[:filename],
             Language: 'ja'
         }
-        folder.append(pages)
-        folder.append(ocrs)
+        folder.append(pages.sort)
+        folder.append(jsons)
         folder.append(info)
         folder.append(options[:imageFolder])
         folders.append(folder)
@@ -103,26 +103,22 @@ else
         }
         begin
             pages = []
-            pagesTmp = []
             Find.find("#{options[:parentImg]}/#{volume}") do |path|
-                pagesTmp << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
+                pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
             end
-            pages.concat(pagesTmp.sort)
-            ocrs = []
-            ocrsTmp = []
+            jsons = {}
             Find.find("#{options[:parentOcr]}/#{volume}") do |path|
-                ocrsTmp << path if path =~ /.*\.json$/i
+                jsons[path.match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]] = path if path =~ /.*\.json$/i
             end
-            ocrs.concat(ocrsTmp.sort)
-            if pages.length > 0 && ocrs.length > 0
-                puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found\n"
-                folder.append(pages)
-                folder.append(ocrs)
+            if pages.length > 0 && jsons.length > 0
+                puts "\t#{volume} - #{pages.length} Pages found, #{jsons.length} Jsons found\n"
+                folder.append(pages.sort)
+                folder.append(jsons)
                 folder.append(info)
                 folder.append("#{options[:parentImg]}/#{volume}")
                 folders.append(folder)
             else
-                puts "\t#{volume} - #{pages.length} Pages found, #{ocrs.length} Jsons found. Skipping folder\n"
+                puts "\t#{volume} - #{pages.length} Pages found, #{jsons.length} Jsons found. Skipping folder\n"
             end
         rescue
             puts "\t#{volume} - No Pages/Jsons found, skipping folder"
@@ -132,15 +128,24 @@ end
 for folder in folders do
     begin
         pages = folder[0]
-        ocrs = folder[1]
+        jsons = folder[1]
         info = folder[2]
         folderName = folder[3] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? folder[3].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : folder[3]
         pagesJson = {}
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
-            page = JSON.parse(File.read(ocrs[i]))
-            pageWidth = page["img_width"]
-            pageHeight = page["img_height"]
+            if jsons.include? pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]
+                has_Json = true
+                page = JSON.parse(File.read(jsons[pages[i].match(/(?<=\\|\/)[^\\\/]{1,}?(?=\.)/)[0]]))
+                pageWidth = page["img_width"]
+                pageHeight = page["img_height"]
+            else
+                puts "!!No ocr data found for page #{i+1}!!"
+                has_Json = false
+                page = MiniMagick::Image.open(pages[i])
+                pageWidth = page[:width]
+                pageHeight = page[:height]
+            end
             pageImg = pages[i]
             pagesJson[i+1] = pages[i].match(/#{Regexp.escape(folderName)}.*?$/)[0]
             if options[:gamma] == 1
@@ -158,6 +163,7 @@ for folder in folders do
                 pdf.start_new_page(size: [pageWidth, pageHeight], margin: [0, 0, 0, 0])
             end
             pdf.image pageBgMagickPath, height: pageHeight, width: pageWidth, at: [0, pageHeight]
+            next if !has_Json
             pageText = page["blocks"]
             pdf.transparent(options[:fontTransparency]) do
                 pdf.font("ipaexg.ttf")
@@ -169,7 +175,7 @@ for folder in folders do
                     if !isBoxVert
                         for l in 0...pageText[b]["lines"].length do
                             line = pageText[b]["lines"][l].gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,]+$/, "")
-                            if line.length > 0
+                            if !(line.to_s == '' || line.nil?)
                                 lineLeft = pageText[b]["lines_coords"][l][3][0]
                                 lineRight = pageText[b]["lines_coords"][l][2][0]
                                 lineBottom = pageText[b]["lines_coords"][l][3][1] <= pageText[b]["lines_coords"][l][2][1] ? pageText[b]["lines_coords"][l][3][1] : pageText[b]["lines_coords"][l][2][1]
@@ -218,7 +224,7 @@ for folder in folders do
                             lineHeight = minBottom - minTop
                             lineHeight = boxHeight <= lineHeight ? boxHeight : lineHeight
                             lineWidth = widthTop <= widthBottom ? widthTop : widthBottom
-                            if lineLength > 0
+                            if !(lineLength.nil? || lineLength == 0 || lineLength.to_s == '')
                                 fontSize = (lineHeight / lineLength) <= (lineWidth * 1.75) ? (lineHeight / lineLength) : (lineWidth * 1.75)
                                 for level in textLevels do
                                     levelLine[level] = [] if !(levelLine.key?(level))
@@ -232,6 +238,7 @@ for folder in folders do
                             end
                         end
                         for level in 0...textLevels.length do
+                            next if (levelLine[textLevels[level]].nil? || levelLine[textLevels[level]] == 0 || levelLine[textLevels[level]].to_s == '')
                             boxWidth = levelWidth[level][1] - levelWidth[level][2]
                             boxLength = levelLine[textLevels[level]].length
                             boxLeft = levelWidth[level][2]
