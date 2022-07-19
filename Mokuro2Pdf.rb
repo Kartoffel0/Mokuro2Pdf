@@ -132,7 +132,6 @@ for folder in folders do
         jsons = folder[1]
         info = folder[2]
         folderName = folder[3]
-        pagesJson = {}
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
             if jsons.include? pages[i].match(/#{folderName}.*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]
@@ -148,7 +147,6 @@ for folder in folders do
                 pageHeight = page[:height]
             end
             pageImg = pages[i]
-            pagesJson[i+1] = pages[i].match(/#{Regexp.escape(folderName)}.*?$/)[0]
             if options[:gamma] == 1
                 pageBgMagickPath = pageImg
             else
@@ -315,8 +313,6 @@ for folder in folders do
                 end
             end
         end
-        FileUtils.mkdir_p options[:outputFolder] + "Memo2Anki_Jsons"
-        File.write("#{options[:outputFolder]}Memo2Anki_Jsons/#{info[:Title]} - MKR2PDF.json", JSON.dump(pagesJson))
         if options[:gamma] != 1
             FileUtils.remove_dir("tmp")
         end
