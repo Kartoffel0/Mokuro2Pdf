@@ -62,21 +62,23 @@ if !options.key?(:parentImg)
     end
     folder = []
     puts "Converting '#{options[:imageFolder]}/' to '#{options[:filename]} - MKR2PDF.pdf'"
-    if !options.key?(:ocrFolder)
-        puts "Using the default '_ocr/#{options[:imageFolder]}/' ocr folder path"
-        options[:ocrFolder] = "_ocr/#{options[:imageFolder]}"
-    else
-        puts "Using the defined '#{options[:ocrFolder]}/' ocr folder path"
-    end
     begin
-        volume = options[:imageFolder] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? options[:imageFolder].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : options[:imageFolder]
+        volumeImg = options[:imageFolder] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? options[:imageFolder].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : options[:imageFolder]
+        if !options.key?(:ocrFolder)
+            puts "Using the default '_ocr/#{volumeImg}/' ocr folder path"
+            options[:ocrFolder] = "_ocr/#{volumeImg}"
+            volumeOcr = volumeImg
+        else
+            puts "Using the defined '#{options[:ocrFolder]}/' ocr folder path"
+            volumeOcr = options[:ocrFolder] =~ /(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/ ? options[:ocrFolder].match(/(?<=\\|\/)[^\\\/]{1,}?(?=$|[\\\/]$)/)[0] : options[:ocrFolder]
+        end
         pages = []
         Find.find(options[:imageFolder]) do |path|
             pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
         end
         jsons = {}
         Find.find(options[:ocrFolder]) do |path|
-            jsons[path.match(/#{volume}.*?(?=\.json$)/i)[0]] = path if path =~ /.*\.json$/i
+            jsons[path.match(/#{Regexp.escape(volumeOcr)}.*?(?=\.json$)/i)[0].gsub(/^.*?(?=[\\\/])/, volumeImg)] = path if path =~ /.*\.json$/i
         end
         puts "#{pages.length} Pages found"
         puts "#{jsons.length} Jsons found"
@@ -87,7 +89,7 @@ if !options.key?(:parentImg)
         folder.append(pages.sort)
         folder.append(jsons)
         folder.append(info)
-        folder.append(volume)
+        folder.append(volumeImg)
         folders.append(folder)
     rescue
         puts "No Pages/Jsons found"
@@ -109,7 +111,7 @@ else
             end
             jsons = {}
             Find.find("#{options[:parentOcr]}/#{volume}") do |path|
-                jsons[path.match(/#{volume}.*?(?=\.json$)/i)[0]] = path if path =~ /.*\.json$/i
+                jsons[path.match(/#{Regexp.escape(volume)}.*?(?=\.json$)/i)[0]] = path if path =~ /.*\.json$/i
             end
             if pages.length > 0 && jsons.length > 0
                 puts "\t#{volume} - #{pages.length} Pages found, #{jsons.length} Jsons found\n"
@@ -131,12 +133,12 @@ for folder in folders do
         pages = folder[0]
         jsons = folder[1]
         info = folder[2]
-        folderName = folder[3]
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
-            if jsons.include? pages[i].match(/#{folderName}.*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]
+            imagePath = pages[i].match(/(#{Regexp.escape(folder[3])}).*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]
+            if jsons.include? imagePath
                 has_Json = true
-                page = JSON.parse(File.read(jsons[pages[i].match(/#{folderName}.*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]]))
+                page = JSON.parse(File.read(jsons[imagePath]))
                 pageWidth = page["img_width"]
                 pageHeight = page["img_height"]
             else
