@@ -14,6 +14,9 @@ Create pdf files with selectable text from [Mokuro](https://github.com/kha-white
 # Usage
 Process your manga volume(s) using [Mokuro](https://github.com/kha-white/mokuro)
 
+### Use [TheRealDynamo's Colab Notebook](https://colab.research.google.com/drive/1sxjIyupBhCBpHHZZk6CPrZ61noeJO-8o?usp=sharing) 
+Follow the instructions in order to Mokuro and convert your manga volumes to pdf, completely online no setup required
+
 ### Single Volume conversion
 `ruby Mokuro2Pdf.rb -i "[1]" -o "[2]" -n "[3]" -g [4] -f [5] -w "[6]"`
   - **[1] - Path to volume's images folder, relative/absolute**
