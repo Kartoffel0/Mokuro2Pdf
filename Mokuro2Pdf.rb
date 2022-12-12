@@ -14,7 +14,7 @@ OptionParser.new do |opt|
     opt.on("-n NAME", "--name NAME", "Filename the created pdf will have") do |n|
         options[:filename] = n
     end
-    opt.on("-g GAMMA", "--gamma GAMMA", "Gamma value to be used on all images, default = 0.8") do |g|
+    opt.on("-g GAMMA", "--gamma GAMMA", "Gamma value to be used on all images, default = 1") do |g|
         options[:gamma] = g.to_f
     end
     opt.on("-o OCRFOLDER", "--ocr OCRFOLDER", "Folder containing all manga pages's ocr data, default = _ocr/#{options[:imageFolder]}") do |o|
@@ -38,8 +38,8 @@ puts "Mokuro2Pdf"
 if options.key?(:gamma)
     puts "Using the defined #{options[:gamma]} gamma value"
 else
-    puts "Using the default(0.8) gamma value"
-    options[:gamma] = 0.8
+    puts "Using the default(1) gamma value"
+    options[:gamma] = 1
 end
 if options.key?(:fontTransparency)
     puts "Using the defined #{options[:fontTransparency]} font transparency"
