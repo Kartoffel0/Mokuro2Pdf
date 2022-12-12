@@ -19,7 +19,7 @@ Process your manga volume(s) using [Mokuro](https://github.com/kha-white/mokuro)
   - **[1] - Path to volume's images folder, relative/absolute**
   - **[2] - Path to volume's [mokuro _ocr folder](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/folders.JPG), defaults to `Mokuro2Pdf/_ocr/[1]` if [1] is relative**
   - **[3] (Optional) - Generated pdf's filename, defaults to volume's images folder's name**
-  - **[4] (Optional) - Gamma value to be used on all pages, defaults to 0.8**
+  - **[4] (Optional) - Gamma value to be used on all pages, defaults to 1**
   - **[5] (Optional) - Selectable text's font transparency, defaults to 0.2**
   - **[6] (Optional) - Output folder's path, defaults to [1]'s root folder**
 
@@ -33,7 +33,7 @@ Create a parent folder containing all the volumes you want to convert, one for t
 `ruby Mokuro2Pdf.rb -p "[1]" -q "[2]" -g [3] -f [4] -w "[5]"`
   - **[1] - Parent images folder's path, must be absolute**
   - **[2] - Parent jsons folder's path, must be absolute**
-  - **[3] (Optional) - Gamma value to be used on all pages, defaults to 0.8**
+  - **[3] (Optional) - Gamma value to be used on all pages, defaults to 1**
   - **[4] (Optional) - Selectable text's font transparency, defaults to 0.2**
   - **[5] (Optional) - Output folder's path, defaults to Mokuro2Pdf.rb's root folder**
 
