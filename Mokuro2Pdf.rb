@@ -241,13 +241,13 @@ for folder in folders do
                             next if (levelLine[textLevels[level]].nil? || levelLine[textLevels[level]] == 0 || levelLine[textLevels[level]].to_s == '')
                             boxWidth = levelWidth[level][1] - levelWidth[level][2]
                             boxLength = levelLine[textLevels[level]].length
-                            boxLeft = levelWidth[level][2]
                             boxFSize = levelLine[textLevels[level]].reduce(99999) {|smallest, line| (line[1] < smallest) && (line[1] > (line[2] * 0.3)) ? line[1] : smallest}
                             lineSpace = 1.1
                             if boxLength > 1
                                 lineSpace = ((boxWidth - (boxLength * boxFSize)) / (boxLength - 1)) + boxFSize
                             end
-                            for line in levelLine[textLevels[level]].reverse do
+                            boxLeft = levelWidth[level][2] + lineSpace * (boxLength - 1)
+                            for line in levelLine[textLevels[level]] do
                                 next if line[1] <= (line[2] * 0.5)
                                 fontSize = line[1]
                                 line = line[0].strip.gsub(/(．．．)/, "…").gsub(/(．．)/, "‥").gsub(/(．)/, "").gsub(/\s/, "").gsub(/[。\.．、，,…‥!！?？：～~]+$/, "")
@@ -307,7 +307,7 @@ for folder in folders do
                                         boxUp -= fontSize
                                     end
                                 end
-                                boxLeft += lineSpace
+                                boxLeft -= lineSpace
                             end
                         end
                     end
