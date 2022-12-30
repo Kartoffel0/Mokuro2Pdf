@@ -23,7 +23,7 @@ Mandatory
 
 Single volume
 -i path     - Path to volume's images folder, relative/absolute
--o path     - Path to volume's mokuro _ocr folder, defaults to `Mokuro2Pdf/_ocr/[1]` if [1] is relative
+-o path     - Path to volume's mokuro _ocr folder, defaults to Mokuro2Pdf/_ocr/-i if -i is relative
 
 Multiple volumes
 -p path     - Parent images folder's path, must be absolute
