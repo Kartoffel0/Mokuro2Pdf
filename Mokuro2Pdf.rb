@@ -32,6 +32,9 @@ OptionParser.new do |opt|
     opt.on("-w OUTPUT_FOLDER", "--write_to OUTPUT_FOLDER", "Output folder") do |w|
         options[:outputFolder] = w
     end
+    opt.on("-u", "--upscale_on", "Turn on image upscaling if image resolution < Kindle's resolution") do |u|
+        options[:upscale] = true
+    end
 end.parse!
 puts ""
 puts "Mokuro2Pdf"
@@ -54,6 +57,11 @@ if options.key?(:outputFolder)
     end
 else
     options[:outputFolder] = ""
+end
+if options.key?(:upscale)
+    puts "Upscale on"
+else
+    options[:upscale] = false
 end
 folders = []
 if !options.key?(:parentImg)
@@ -148,14 +156,31 @@ for folder in folders do
                 pageWidth = page[:width]
                 pageHeight = page[:height]
             end
-            if options[:gamma] == 1
-                pageBgMagickPath = pages[i]
-            else
+            if options[:upscale] || options[:gamma] != 1
                 FileUtils.mkdir_p "tmp"
                 pageBgMagick = MiniMagick::Image.open(pages[i])
-                pageBgMagick.gamma options[:gamma]
+                if options[:gamma] != 1
+                    pageBgMagick.gamma options[:gamma]
+                end
+                if options[:upscale]
+                    pageRes = [pageBgMagick[:width], pageBgMagick[:height]]
+                    if pageRes[0] < 1016 || pageRes[1] < 1358
+                        upscale = 1
+                        while (pageRes[0] * upscale).to_i < 1016 || (pageRes[1] * upscale).to_i < 1358
+                            upscale += 0.25
+                        end
+                    else
+                        upscale = 1
+                    end
+                    pageBgMagick.scale "#{(pageRes[0] * upscale).to_i}x#{(pageRes[1] * upscale).to_i}"
+                end
                 pageBgMagick.write "tmp/page-#{i}"
                 pageBgMagickPath = "tmp/page-#{i}"
+                pageWidth = pageBgMagick[:width]
+                pageHeight = pageBgMagick[:height]
+            else
+                pageBgMagickPath = pages[i]
+                upscale = 1
             end
             if i == 0
                 pdf = Prawn::Document.new(page_size: [pageWidth, pageHeight], margin: [0, 0, 0, 0], info: info)
@@ -164,12 +189,29 @@ for folder in folders do
             end
             pdf.image pageBgMagickPath, height: pageHeight, width: pageWidth, at: [0, pageHeight]
             next if !has_Json
-            pageText = page["blocks"]
+            if upscale > 1
+                pageText = page["blocks"].map{ |x| 
+                    x["box"].map!{ |y| 
+                        (y * upscale).to_i
+                        }
+                    x["lines_coords"].map!{ |l| 
+                        l.map!{ |c| 
+                            c.map!{ |d|
+                                ((d * upscale).to_i).to_f
+                            }
+                            }
+                        }
+                    x["font_size"] = (x["font_size"] * upscale).to_i
+                    x
+                    }
+            else
+                pageText = page["blocks"]
+            end
             pdf.transparent(options[:fontTransparency]) do
                 pdf.font("ipaexg.ttf")
                 for b in 0...pageText.length do
                     heightTreshold = pageHeight * 0.0075
-                    widthThreshold =pageWidth * 0.0075
+                    widthThreshold = pageWidth * 0.0075
                     isBoxVert = pageText[b]["vertical"]
                     fontSize = 0
                     if !isBoxVert
@@ -314,12 +356,12 @@ for folder in folders do
                 end
             end
         end
-        if options[:gamma] != 1
+        if options[:gamma] != 1 || upscale != 1
             FileUtils.remove_dir("tmp")
         end
         pdf.render_file("#{options[:outputFolder]}#{info[:Title]} - MKR2PDF.pdf")
         puts "Done!"
     rescue => e
-        puts e
+        puts e.full_message
     end
 end
