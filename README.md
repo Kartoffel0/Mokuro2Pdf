@@ -17,35 +17,48 @@ Process your manga volume(s) using [Mokuro](https://github.com/kha-white/mokuro)
 ### Use [TheRealDynamo's Colab Notebook](https://colab.research.google.com/drive/1sxjIyupBhCBpHHZZk6CPrZ61noeJO-8o?usp=sharing) 
 Follow the instructions in order to Mokuro and convert your manga volumes to pdf, completely online no setup required
 
-### Single Volume conversion
-`ruby Mokuro2Pdf.rb -i "[1]" -o "[2]" -n "[3]" -g [4] -f [5] -w "[6]"`
-  - **[1] - Path to volume's images folder, relative/absolute**
-  - **[2] - Path to volume's [mokuro _ocr folder](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/folders.JPG), defaults to `Mokuro2Pdf/_ocr/[1]` if [1] is relative**
-  - **[3] (Optional) - Generated pdf's filename, defaults to volume's images folder's name**
-  - **[4] (Optional) - Gamma value to be used on all pages, defaults to 1**
-  - **[5] (Optional) - Selectable text's font transparency, defaults to 0.2**
-  - **[6] (Optional) - Output folder's path, defaults to [1]'s root folder**
+### Arguments
+```
+Mandatory
 
-"`ruby Mokuro2Pdf.rb -i "[ばらスィー] 苺ましまろ 第01巻" -n "苺ましまろ 第01巻" -f 0.1 -g 0.5`"
- 
- This will generate a `[2] - MKR2PDF.pdf` pdf file
+Single volume
+-i path     - Path to volume's images folder, relative/absolute
+-o path     - Path to volume's mokuro _ocr folder, defaults to `Mokuro2Pdf/_ocr/[1]` if [1] is relative
+
+Multiple volumes
+-p path     - Parent images folder's path, must be absolute
+-q path     - Parent jsons folder's path, must be absolute
+```
+
+```
+Optional
+-n filename - Generated pdf's filename, defaults to volume's images folder's name
+-w path     - Output folder's path, defaults to volume/Mokuro2Pdf's root folder
+-g value    - Gamma value to be used on all pages, ranges from 0.0 to 1.0, defaults to 1
+-f value    - Selectable text's font transparency, ranges from 0.0 to 1.0, defaults to 0.2
+-u          - Turns on upscaling to Kindle's pdf viewport resolution, improves image quality on Kindle
+```
+
+### Single Volume conversion
+`ruby Mokuro2Pdf.rb -i "image path" -o "ocr path"`
+
+"`ruby Mokuro2Pdf.rb -i "[ばらスィー] 苺ましまろ 第01巻" -n "苺ましまろ 第01巻" -f 0.1 -g 0.5 -u`"
+
+will generate a `苺ましまろ 第01巻 - MKR2PDF.pdf` pdf file
 
 ### Multiple Volumes conversion
 Create a parent folder containing all the volumes you want to convert, one for the images and another for the jsons
 
-`ruby Mokuro2Pdf.rb -p "[1]" -q "[2]" -g [3] -f [4] -w "[5]"`
-  - **[1] - Parent images folder's path, must be absolute**
-  - **[2] - Parent jsons folder's path, must be absolute**
-  - **[3] (Optional) - Gamma value to be used on all pages, defaults to 1**
-  - **[4] (Optional) - Selectable text's font transparency, defaults to 0.2**
-  - **[5] (Optional) - Output folder's path, defaults to Mokuro2Pdf.rb's root folder**
+`ruby Mokuro2Pdf.rb -p "parent folder path" -q "parent json path"`
 
 "`ruby Mokuro2Pdf.rb -p "C:/Users/Ghabriel/Desktop/Manga" -q "C:/Users/Ghabriel/Documents/
-Mokuro2Pdf/_ocr" -g 1 -w "C:/Users/Ghabriel/Desktop/Manga/PDF"`"
+Mokuro2Pdf/_ocr" -g 1 -w "C:/Users/Ghabriel/Desktop/Manga/PDF" -u`"
 
-This will generate a `[foldername] - MKR2PDF.pdf` pdf file for each folder inside [1]
+will generate a `[foldername] - MKR2PDF.pdf` pdf file for each folder inside `-p`
 
-# Mining
-[Memo2Anki](https://github.com/Kartoffel0/Memo2Anki)
+# Kindle usage
+Use `-g 0.8` for better contrast, `-u` for [better image quality](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/img/upscale_demo.png)
+
+You can mine from the pdfs using [Memo2Anki](https://github.com/Kartoffel0/Memo2Anki)
 
 #### A [20 page demo](https://github.com/Kartoffel0/Mokuro2Pdf/blob/master/Mokuro2Pdf-Demo%20-%20MKR2PDF.pdf) is avaiable, to read it on your kindle simply drag and drop "Mokuro2Pdf-Demo - MKR2PDF.pdf" to your kindle's documents folder
