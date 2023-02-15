@@ -35,6 +35,9 @@ OptionParser.new do |opt|
     opt.on("-u", "--upscale_on", "Turn on image upscaling if image resolution < Kindle's resolution") do |u|
         options[:upscale] = true
     end
+    opt.on("-c", "--convert", "Convert all images to JPGs to reduce the generated pdf's file size") do |c|
+        options[:convert] = true
+    end
 end.parse!
 puts ""
 puts "Mokuro2Pdf"
@@ -47,8 +50,8 @@ end
 if options.key?(:fontTransparency)
     puts "Using the defined #{options[:fontTransparency]} font transparency"
 else
-    puts "Using the default(0.2) font transparency"
-    options[:fontTransparency] = 0.2
+    puts "Using the default(0) font transparency"
+    options[:fontTransparency] = 0
 end
 if options.key?(:outputFolder)
     puts "Using the defined #{options[:outputFolder]} output folder"
@@ -62,6 +65,11 @@ if options.key?(:upscale)
     puts "Upscale on"
 else
     options[:upscale] = false
+end
+if options.key?(:convert)
+    puts "JPG conversion on"
+else
+    options[:convert] = false
 end
 folders = []
 if !options.key?(:parentImg)
@@ -90,9 +98,12 @@ if !options.key?(:parentImg)
         end
         puts "#{pages.length} Pages found"
         puts "#{jsons.length} Jsons found"
+        if pages.length != jsons.length
+            puts "\tWARNING - Pages and Jsons numbers don't match"
+        end
         info = {
-            Title: options[:filename],
-            Language: 'ja'
+            Title: options[:filename].gsub(/^([\[\(【].*?[\]\)】])+|(DLraw.*?[\]\)】])+|(DLraw.*?[\-_])+|(?<=\s)([\[\(].*?[\]\)](?=\s|$))+|【.*】【.*?】/i, "").strip,
+            Author: "MKR2PDF"
         }
         folder.append(pages.sort)
         folder.append(jsons)
@@ -109,8 +120,8 @@ else
     for volume in volumesImg do
         folder = []
         info = {
-            Title: volume,
-            Language: 'ja'
+            Title: volume.gsub(/^([\[\(【].*?[\]\)】])+|(DLraw.*?[\]\)】])+|(DLraw.*?[\-_])+|(?<=\s)([\[\(].*?[\]\)](?=\s|$))+|【.*】【.*?】/i, "").strip,
+            Author: "MKR2PDF"
         }
         begin
             pages = []
@@ -123,6 +134,9 @@ else
             end
             if pages.length > 0 && jsons.length > 0
                 puts "\t#{volume} - #{pages.length} Pages found, #{jsons.length} Jsons found\n"
+                if pages.length != jsons.length
+                    puts "\t\tWARNING - Pages and Jsons numbers don't match"
+                end
                 folder.append(pages.sort)
                 folder.append(jsons)
                 folder.append(info)
@@ -156,16 +170,16 @@ for folder in folders do
                 pageWidth = page[:width]
                 pageHeight = page[:height]
             end
-            if options[:upscale] || options[:gamma] != 1
+            if options[:upscale] || options[:gamma] != 1 || options[:convert]
                 FileUtils.mkdir_p "tmp"
                 pageBgMagick = MiniMagick::Image.open(pages[i])
+                upscale = 1
                 if options[:gamma] != 1
                     pageBgMagick.gamma options[:gamma]
                 end
                 if options[:upscale]
                     pageRes = [pageBgMagick[:width], pageBgMagick[:height]]
                     if pageRes[0] < 1016 || pageRes[1] < 1358
-                        upscale = 1
                         while (pageRes[0] * upscale).to_i < 1016 || (pageRes[1] * upscale).to_i < 1358
                             upscale += 0.25
                         end
@@ -173,6 +187,11 @@ for folder in folders do
                         upscale = 1
                     end
                     pageBgMagick.scale "#{(pageRes[0] * upscale).to_i}x#{(pageRes[1] * upscale).to_i}"
+                end
+                if options[:convert]
+                    if pageBgMagick[:type] != "JPEG"
+                        pageBgMagick.format "JPEG"
+                    end
                 end
                 pageBgMagick.write "tmp/page-#{i}"
                 pageBgMagickPath = "tmp/page-#{i}"
@@ -356,7 +375,7 @@ for folder in folders do
                 end
             end
         end
-        if options[:gamma] != 1 || upscale != 1
+        if options[:gamma] != 1 || upscale != 1 || options[:convert]
             FileUtils.remove_dir("tmp")
         end
         pdf.render_file("#{options[:outputFolder]}#{info[:Title]} - MKR2PDF.pdf")
