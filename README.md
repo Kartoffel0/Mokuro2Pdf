@@ -12,10 +12,12 @@ Create pdf files with selectable text from [Mokuro](https://github.com/kha-white
 - [Image Magick](https://imagemagick.org/script/download.php)
 
 # Usage
-Process your manga volume(s) using [Mokuro](https://github.com/kha-white/mokuro)
-
 ### Use [TheRealDynamo's Colab Notebook](https://colab.research.google.com/drive/1sxjIyupBhCBpHHZZk6CPrZ61noeJO-8o?usp=sharing) 
 Follow the instructions in order to Mokuro and convert your manga volumes to pdf, completely online no setup required
+
+or
+
+Process your manga volume(s) using [Mokuro](https://github.com/kha-white/mokuro)
 
 ### Arguments
 ```
