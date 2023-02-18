@@ -39,6 +39,7 @@ Optional
 -g value    - Gamma value to be used on all pages, ranges from 0.0 to 1.0, defaults to 1
 -f value    - Selectable text's font transparency, ranges from 0.0 to 1.0, defaults to 0.2
 -u          - Turns on upscaling to Kindle's pdf viewport resolution, improves image quality on Kindle
+-c          - Converts all images to JPG(92) for a smaller file size
 ```
 
 ### Single Volume conversion
