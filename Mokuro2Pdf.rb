@@ -90,7 +90,7 @@ if !options.key?(:parentImg)
         end
         pages = []
         Find.find(options[:imageFolder]) do |path|
-            pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
+            pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$/i
         end
         jsons = {}
         Find.find(options[:ocrFolder]) do |path|
@@ -126,7 +126,7 @@ else
         begin
             pages = []
             Find.find("#{options[:parentImg]}/#{volume}") do |path|
-                pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$/i
+                pages << path if path =~ /.*\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$/i
             end
             jsons = {}
             Find.find("#{options[:parentOcr]}/#{volume}") do |path|
@@ -157,7 +157,11 @@ for folder in folders do
         info = folder[2]
         puts "\nProcessing #{info[:Title]}..."
         for i in 0...pages.length do
-            imagePath = pages[i].match(/(#{Regexp.escape(folder[3])}).*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2)$)/i)[0]
+            imagePath = pages[i].match(/(#{Regexp.escape(folder[3])}).*?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$)/i)[0]
+            imageExt = pages[i].match(/\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$/i)
+            if !imageExt[0].match?(/jpg|jpeg|png/i)
+                options[:convert] = true
+            end
             if jsons.include? imagePath
                 has_Json = true
                 page = JSON.parse(File.read(jsons[imagePath]))
