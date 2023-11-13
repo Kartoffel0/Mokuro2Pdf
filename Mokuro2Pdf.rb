@@ -38,6 +38,9 @@ OptionParser.new do |opt|
     opt.on("-c", "--convert", "Convert all images to JPGs to reduce the generated pdf's file size") do |c|
         options[:convert] = true
     end
+    opt.on("-s", "--sort_natural", "Use natural sorting for filenames, might break 'properly' named files so use only when pdf pages are placed out of order") do |s|
+        options[:nsorting] = true
+    end
 end.parse!
 puts ""
 puts "Mokuro2Pdf"
@@ -70,6 +73,11 @@ if options.key?(:convert)
     puts "JPG conversion on"
 else
     options[:convert] = false
+end
+if options.key?(:nsorting)
+    puts "Using Natural Sorting"
+else
+    options[:nsorting] = false
 end
 folders = []
 if !options.key?(:parentImg)
@@ -105,7 +113,11 @@ if !options.key?(:parentImg)
             Title: options[:filename].gsub(/^([\[\(【].*?[\]\)】])+|(DLraw.*?[\]\)】])+|(DLraw.*?[\-_])+|(?<=\s)([\[\(].*?[\]\)](?=\s|$))+|【.*】【.*?】/i, "").strip,
             Author: "MKR2PDF"
         }
-        folder.append(pages.sort_by{|n| n.match(/\d+?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$)/i)[0].to_i})
+        if options[:nsorting]
+            folder.append(pages.sort_by{|n| n.match(/\d+?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$)/i)[0].to_i})
+        else
+            folder.append(pages.sort)
+        end
         folder.append(jsons)
         folder.append(info)
         folder.append(volumeImg)
@@ -137,7 +149,11 @@ else
                 if pages.length != jsons.length
                     puts "\t\tWARNING - Pages and Jsons numbers don't match"
                 end
-                folder.append(pages.sort_by{|n| n.match(/\d+?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$)/i)[0].to_i})
+                if options[:nsorting]
+                    folder.append(pages.sort_by{|n| n.match(/\d+?(?=\.(jpg|jpeg|jpe|jif|jfif|jfi|png|gif|webp|tiff|tif|psd|raw|arw|cr2|nrw|k25|bmp|dib|jp2|j2k|jpf|jpx|jpm|mj2|avif)$)/i)[0].to_i})
+                else
+                    folder.append(pages.sort)
+                end
                 folder.append(jsons)
                 folder.append(info)
                 folder.append(volume)
