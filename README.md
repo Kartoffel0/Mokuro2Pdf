@@ -40,6 +40,7 @@ Optional
 -f value    - Selectable text's font transparency, ranges from 0.0 to 1.0, defaults to 0
 -u          - Turns on upscaling to Kindle's pdf viewport resolution, improves image quality on Kindle
 -c          - Converts all images to JPG(92) for a smaller file size
+-s          - Use Natural Sorting for filenames, might break properly named files so use only when pages get placed out of order
 ```
 
 ### Single Volume conversion
